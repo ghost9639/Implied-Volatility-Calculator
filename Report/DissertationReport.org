@@ -1,0 +1,2870 @@
+#+title: Latest Draft
+#+author: R
+#+OPTIONS: toc:nil title:nil
+#+LATEX_CLASS: article
+
+#+LATEX_CLASS_OPTIONS: [a4paper,12pt]
+#+LATEX_HEADER: \usepackage{times}
+#+latex_header: \usepackage{tikz}
+#+LATEX_HEADER: \usepackage{amsmath}
+#+LATEX_HEADER: \usepackage[utf8]{inputenc}
+#+LATEX_HEADER: \usepackage{natbib}
+#+LATEX_HEADER: \usepackage{svg}
+# +LATEX_HEADER: \usepackage[inkscapeformat=png]{svg}
+# +LATEX_HEADER: \usepackage[backend=biber]{biblatex}
+# +LATEX_HEADER: \usepackage{graphicx}
+#+LATEX_HEADER: \usepackage{hyperref}
+# +LATEX_HEADER: \usepackage{breqn}
+#+LATEX_HEADER: \usepackage{psfrag}
+#+LATEX_HEADER: \usepackage{epsf,epsfig}
+#+LATEX_HEADER: \usepackage{amsmath,amsthm,amsfonts,amssymb}
+#+LATEX_HEADER: \setlength{\textwidth}{171 mm}
+#+LATEX_HEADER: \setlength{\oddsidemargin}{-0.3in}
+#+LATEX_HEADER: \setlength{\textheight}{9.0in}
+#+LATEX_HEADER: \setlength{\topmargin}{-0.5in}
+#+latex_header: \usepackage{listings}
+#+LATEX_HEADER: \pagestyle{plain}
+#+LATEX_HEADER: \hoffset=5mm
+#+latex_header: \usepackage{fontspec}
+
+#+latex_header: \newfontfamily\Meslo{MesloLGLDZ Nerd Font}
+#+latex_header: \setmainfont{Latin Modern Roman}[Ligatures=TeX]
+#+latex_header: \usepackage{moresize}
+#+latex_header: \usepackage[mathrm=sym]{unicode-math}
+#+latex_header: \setmathfont{Latin Modern Math}
+# +LATEX_HEADER: \setupbodyfont[modern]
+
+#+LATEX_HEADER: \lstset{  basicstyle=\Meslo\small,  breaklines=true, numberstyle=\tiny\color{codegray}, showspaces=false,  showstringspaces=false, numbers = left, numbersep = 5pt, language=Python}
+
+\begin{titlepage}
+   \begin{center}
+       \vspace*{1cm}
+
+       \Large{\textbf{The Inverse Problem of Option Pricing}}
+
+       \vspace{0.5cm}
+        MATH5312: Dissertation in Financial Mathematics \\ 45 credits, 450 expected hours \\ 2026
+            
+       \vspace{1.5cm}
+
+       \textbf{Rahul Ghosh: 201605543} \\ (email: hy22rg@leeds.ac.uk)
+
+
+       \vfill
+            
+       A thesis presented for the degree of\\
+       Financial Mathematics MSc
+            
+       \vspace{0.8cm}
+     
+       \includegraphics[width=0.4\textwidth]{images/university.png}
+            
+
+       Leeds University Business School\\
+       School of Mathematics \\
+       University of Leeds\\
+       Supervisor: Professor Daniel Lesnic
+       
+            
+   \end{center}
+\end{titlepage}
+
+\tableofcontents
+
+
+* Abstract
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+
+Academic and industrial practitioners commonly model stock movements as stochastic processes. The Black-Scholes inverse problem concerns the recovery of the parameters of this process, namely the stock's drift and volatility. This paper reproduces key advancements targeting the Black-Scholes inverse problem, especially with regards to implied volatility. First the theory is grounded in key literature and equations. Then, the Black-Scholes partial differential equation with non-zero dividends is directly derived and solved in the original constant volatility case, and specific variable volatility cases. Experimental work is conducted to understand the inputs of the call option premium. A graphical solution to the inverse problem is initially tested, but the ill-posed nature of the problem produces too much numerical instability. Finally, a well-posed model is reproduced and tested.
+
+
+\newpage
+
+
+* Introduction
+
+A European option is a contract that gives the holder the right, but not the obligation, to buy or sell an asset in the future. "Call" and "put" options grant the right to buy or sell respectively. European options may only be executed on a set maturity date, whereas American options can be executed at any time up to or including the maturity date. Derivatives have become a major market in their own right, due in large part to their potential for hedging, speculation, and arbitrage. A European call option has the payoff:
+#+name: eq::eurocallpayoff
+\begin{equation}
+\max \left\{x-K,0 \right\}, \; \; t=T,
+\end{equation}
+where $x$ denotes the price of the asset at time $t$, $t$ is the current time, $T$ is the maturity date, and $K$ is the strike price. A European put option instead as the payoff:
+\[\max \left\{K-x,0 \right\}, \; \; t=T, \]
+both are related at the same strike price and maturity date according to the put-call parity:
+#+name: eq::pcparity
+\begin{equation}
+c(x,t) - p(x,t) = x - Ke^{-R(T-t)}, \; \; 0 \leq t \leq T,
+\end{equation}
+where $c(x,t)$ and $p(x,t)$ are the current price of a call and put option respectively, and $R$ is the risk-free rate
+[cite:@hullOptionsFuturesOther2022 pp. 31-33]. Theoretically, any derivative with a continuous (real-valued) payoff can be emulated by simple combinations of European options [cite:@bouchouevUniquenessStabilityNumerical1999 p. R96], any contingent claim can be priced as a series of European options. Due to the myriad benefits of accurately pricing options, several models exist to describe the price behaviour of derivatives.
+
+** Classical option pricing
+
+Efforts to price options date back to 1900, when Bachelier developed an arithmetic Brownian motion model based on probability diffusion [cite:@bachelierTheorieSpeculation1900 pp. 27-32]. His work permitted closed form solutions, but did not consider boundary conditions on ordinary markets, where asset prices can generally only be positive. Samuelson identified some key arbitrage relations and considered a geometric Brownian motion to pricing warrants. He assumed that stock returns followed a log-normal distribution [cite:@samuelsonRationalTheoryWarrant1965 pp. 15-16]. This fit return patterns better, but lacked closed form solutions. Prices were given in terms of computationally expensive integrals, which was a prohibitive constraint in the late 1960s [cite:@samuelsonCompleteModelWarrant1969 p. 33].
+
+
+
+
+Black and Scholes seminal paper unified key models in the literature, including Samuelson's. They took a geometric Brownian motion stock process, but instead chose to apply arbitrage pricing theory to a generalised option pricing function. They assumed that option prices were a function of time and stock value. Black and Scholes considered the stochastic differential equation (SDE):
+#+name: eq::BlackScholesSDE
+\begin{equation}
+dx = x \mu dt + x \sigma dW_t,
+\end{equation}
+where \mu is a drift term, \sigma is a volatility term that scales to the variability of the underlying asset market, and $W_t$ is a Brownian motion. They converted this to the Black-Scholes Partial Differential Equation (PDE) under arbitrage-free conditions:
+\[\frac{\partial u}{\partial t} + \frac{1}{2} \sigma^2 x^2 \frac{\partial^2 u}{\partial x^2} + (R-D) x \frac{\partial u}{\partial x} - Ru = 0; \quad D > 0,\]
+where $u(x_t, t)$ is the call option premium, $t$ is the time, \sigma is the "volatility" of the underlying stock, $x$ is the price of the underlying stock, $R$ is the interest rate, and $D$ is the dividend paid on the underlying stock. They obtained closed form solutions for the fair price of an option under a direct problem of this PDE. This involved a few key assumptions, such as a known and constant risk-free rate, zero dividends, no transaction costs, or unlimited shorting potential [cite:@blackPricingOptionsCorporate1973 pp. 638-644].
+# \linebreak
+
+
+
+An instrumental insight for this solution was a general method for hedging of assets and derivatives. This led to a key arbitrage argument from Black and Scholes that European options could be used to hedge any contingent claim related to stock prices. Merton provided rigorous mathematical basis for their results based on Itô calculus [cite:@mertonTheoryRationalOption1973 p. 166]. Together, they generated major corporate and academic interest into their revolutionary approach.
+
+** Limitations to the Black-Scholes model
+
+Several extensions followed these initial papers, and assumptions within the model came into question. Empirical studies showed that stock returns are leptokurtic [cite:@scottPricingStockOptions1997 p. 413], with fat tails that cannot be explained by a log-normal model. Practitioners inferred that volatility is non-constant, with a skew or "smile" across stock price and time. Others concluded that the stock price evolution followed a more general Markov process than a Brownian motion diffusion. These objections prompted extensions such as stochastic volatility, or jump processes rather [cite:@coxValuationOptionsAlternative1976 p. 147], [cite:@hullPricingOptionsAssets1987 p. 286], [cite:@scottPricingStockOptions1997 p. 417]. In recent years, methods for pricing options under stochastic volatility frameworks have developed massively, with variations on the original Heston model, new explicit solutions, and new algorithms for pricing [cite:@liuPricingOnecliquetOption2026 p. 2], [cite:@mezzanParticlemeshOperatorSplitting2026 p. 2].
+
+
+
+
+There were also efforts to expand the Black-Scholes model to hedge a portfolio of options [cite:@pliskaStochasticCalculusModel1986 p.379], or to extend the model to price path-dependent derivatives like American or Asian options [cite:@aminPricingOptionsRisky1992 p. 230], [cite:@zhiqiangGeometricAverageAsian2018 p. 319]. The original Black-Scholes model assumes that the risk-free rate is constant, but rates change frequently, and are often set or influenced by the local Central Bank, prompting stochastic interest rate models such as the Vasicek model [cite:@vasicekEquilibriumCharacterizationTerm1977 p. 177]. Additional advancements combine transaction costs and jump processes, augmenting volatility as a variable and the fair price of the option [cite:@chenNewtonKrylovMethod pp. 372-374].
+
+
+
+
+At any level of sophistication, the call option premium can only be calculated if the parameters for the Black-Scholes model are known. 
+
+** The inverse problem
+
+In 1994, Dupire showed that the drift and the 'implied volatility' could be obtained from known market data, and suggested a trinomial tree method to obtain the latter [cite:@dupirePricingSmile1994 pp. 5-8]. Concurrently, Derman and Kani had developed an ill-posed algorithm for calculating the volatility "smile" using a binomial Cox-Ross-Rubenstein (CRR) tree fitted exactly to the asset volatility [cite:@dermanRidingSmile1994 p. 278].
+
+
+
+
+Bouchouev and Isakov interrogated the integral solution to the Dupire equation, providing an algorithm to approximate volatility using non-linear Fredholm equations [cite:@bouchouevInverseProblemOption1997 pp. L14-L16]. They extended this further, identifying more algorithms for approximating different variations of volatillity, including volatility (independently) variable in time and/or space [cite:@bouchouevUniquenessStabilityNumerical1999 p. R101]. Software packages were developed for the trinomial trees method, although they could run into practical issues with transition probabilities at each level of the tree, where extreme probability values would negatively impact the approach [cite:@komoradImpliedTrinomialTrees2003 p. 441].
+
+
+
+
+
+In recent years, statistical models like a variation of the Generalised Autoregressive Conditional Heteroskedasticity (GARCH) model have been applied to estimate implied volatility [cite:@escobar-anelShiftedGARCHModel2025 pp. 2-3]. Efforts have also been made to interpolate between parameter values calculated at individual strike prices and maturity dates without creating arbitrage [cite:@gatheralArbitragefreeSVIVolatility2024 p. 5].
+
+
+
+
+
+The inverse problem of option pricing has been studied through parametric and numerical statistical methods. These attempt to recover the value of parameters required to achieve the market price of an option within the Black-Scholes model. However, there are major difficulties in recovering these parameters.
+
+** Difficulties
+
+Inverse problems can be well-posed or ill-posed, depending on whether they satisfy the Hadamard well-posedness requirements. These are:
+1. the existence of a solution,
+2. this solution being unique,
+3. and the solution continuously depending on the data.
+Solutions to ill-posed problems can be massively altered by small changes to corresponding inputs, requiring regularisation or approximation methods for the original problem [cite:@kabanikhinInverseIllposedProblems2011 pp. 7-9]. Early methods for obtaining volatility were ill-posed, as they were coefficient inversion problems that often had to be calculated using the second derivative of the option premium with respect to the strike price. This is a noisy, discrete, and discontinuous distribution with sparse tails, meaning that the calculated implied volatility was overly sensitive to noise. This can be a major arbitrage source if multiple investors obtain different values for the fair price of an option. Early panels were unable to resolve this, as they had not yet established methods to obtain unique solutions to the general inverse problem [cite:@honRecentDevelopmentTheories2003 p. 53].
+
+
+
+
+
+Lishang and Youshan instead proposed a method, treating the inversion as an optimal control problem to improve the stability of the estimate [cite:@lishangIdentifyingVolatilityUnderlying2001 p. 143]. While they were able to rigorously prove this algorithm would converge on a solution to the original problem, they were initially unable to demonstrate the solution would be unique. Later, they were able to develop a similar well-posed method that could recover a unique solution for the implied volatility with a high degree of accuracy in testing [cite:@lishangNewWellposedAlgorithm2003 pp. 454-455].
+
+
+
+
+Some practitioners navigated the ill-posed nature of the inverse problem applying regularisation through the Tikhonov equation, reducing the error and "smoothing" the calculated implied volatility [cite:@severStabilityEstimateInverse2004 p. 805]. This stabilises the solution by improving the efficiency of volatility estimates.
+
+
+
+
+
+
+In summary, studies in option pricing expanded massively following the seminal paper by Black and Scholes. The Black-Scholes inverse problem is the recovery of parameters that set the Black-Scholes price in the market. A variety of methods for recovery of parameters developed following the work of Dupire, Derman, and Kani. Additional work expanded on the original 1973 assumptions, such as no dividends or transaction costs, or constant volatility. The original problem to invert implied volatility is ill-posed, as the distribution of option prices across strike prices is discrete, discontinuous, and noisy. Approaches to navigate this issue have included Tikhonov regularisation, other forms of smoothing / interpolation, exactly fitted bi/trinomial trees, or conversion to alternative, numerically stable problems, such as optimal control or GARCH fitting statistical models.  
+
+
+* The direct problem
+
+** Deriving the Black-Scholes PDE
+
+Black and Scholes considered the SDE ([[eq::BlackScholesSDE]]):
+\[dx_t = x_t \mu dt + x_t \sigma dW_t, \]
+Itô's lemma can price some generic valuation function (corresponding to an option), namely, if there exists a continuous, semi-martingale variable $x_t$ and the smooth functional $f(x_t, t)$ has continuous trajectories, then:
+#+name: eq::ItôLemma
+\begin{equation}
+df(x_t,t) = \frac{\partial}{\partial t} f(x_t,t) dt + \frac{\partial}{\partial x} f(x_t,t) dx_t + \frac{1}{2} \frac{\partial^2}{\partial x^2} f(x_t,t) (dx_t)^2,
+\end{equation}
+as per [cite:@dupireFunctionalItoCalculus2019; p. 7]. Consider a simple Itô process:
+#+name: eq::ItôSimple
+\begin{equation}
+dX_t = a (X_t, t) dt + b (X_t , t) dW_t,
+\end{equation}
+where $a$ and $b$ are functions of $X_t$ (space) and $t$ (time), a key observation in Itô calculus is that for:
+\[dX^2_t = a(X_t,t)^2 dt^2 + 2 a(X_t,t) b(X_t,t) dt \text{ } dW_t + b(X_t,t)^2 dW^2_t, \]
+since, by the definition of a Brownian motion as $W_t \sim N(0,t)$ where $N$ corresponds to the Gaussian distribution, $\mathbb{E}\left[ W^2_t \right] = t$, as $t$ decreases in the differential limit, the $dt^2$ and $dt \cdot dW_t$ terms tend to 0, leaving:
+\[\underset{t \rightarrow 0}{\lim} \; dX^2_t = b(X_t,t)^2 dt. \]
+Entering this relation into ([[eq::ItôLemma]]):
+\[df(X_t,t) = \frac{\partial f}{\partial t} dt + \frac{\partial f}{\partial x} dX_t + \frac{1}{2} \frac{\partial^2 f}{\partial x^2} b(X_t,t)^2 dt, \]
+since $dX_t$ is a general Itô process ([[eq::ItôSimple]]):
+\[df(X_t,t) = \left(\frac{\partial f}{\partial t} + \frac{\partial f}{\partial x} a(X_t,t) + \frac{\partial^2 f}{\partial x^2} b (X_t,t)^2 \right) dt + \frac{\partial f}{\partial x} b(X_t,t) dW_t, \]
+It is also known that the Black-Scholes SDE ([[eq::BlackScholesSDE]]) is an Itô process with the parameters $a(X_t,t) = (R - D) X_t$, and $b(X_t,t) = \sigma X_t$. Black and Scholes also show that in the short run arbitrage-free pricing requires $\mu = R$. This provides the SDE for some option valuation function $u(x,t)$ of an asset $x$ corresponding to the Black-Scholes SDE ([[eq::BlackScholesSDE]]):
+#+name: eq::bsfullpde
+\begin{equation}
+du(X_t,t) = \left(\frac{\partial u}{\partial t} + \frac{\partial u}{\partial x} (R-D)x + \frac{1}{2} \frac{\partial^2 u}{\partial x^2}  x^2 \sigma^2 \right) dt + \frac{\partial u}{\partial x} x \sigma dW_t.
+\end{equation}
+Assuming that the price on the valuation formula is fair, then the deterministic ($dt$) component of ([[eq::bsfullpde]]) should be equal to the market drift, which is the known risk-free rate. This results in the Black-Scholes PDE:
+#+name: eq::BSPDE
+\begin{equation}
+\frac{\partial u}{\partial t} + \frac{\partial u}{\partial x} (R-D)x + \frac{1}{2} \frac{\partial^2 u}{\partial x^2}  x^2 \sigma^2 = R u.
+\end{equation}
+
+
+** Solving the direct problem of the Black-Scholes PDE
+:PROPERTIES:
+:CUSTOM_ID: convfrobs
+:ORDERED:  t
+:END:
+:LOGBOOK:
+CLOCK: [2026-06-18 Thu 10:41]--[2026-06-18 Thu 11:01] =>  0:20
+CLOCK: [2026-06-16 Tue 14:57]--[2026-06-16 Tue 15:17] =>  0:20
+CLOCK: [2026-06-16 Tue 13:43]--[2026-06-16 Tue 14:41] =>  0:58
+CLOCK: [2026-06-16 Tue 13:23]--[2026-06-16 Tue 13:33] =>  0:10
+CLOCK: [2026-06-16 Tue 11:58]--[2026-06-16 Tue 12:59] =>  1:01
+:END:
+
+The direct problem of option pricing is the Black-Scholes PDE under market-specific conditions. This is the problem:
+#+name: eq::BlackScholes
+\begin{equation}
+\frac{\partial u}{\partial t} + \frac{1}{2} \sigma^2 x^2 \frac{\partial^2 u}{\partial x^2} + (R-D) x \frac{\partial u}{\partial x} - Ru = 0; \quad R, D \geq 0, \; \sigma > 0,
+\end{equation}
+with boundary conditions:
+#+name: eq::bsbound1
+\begin{equation}
+u(0,t) = 0, \quad t \in (0,T)
+\end{equation}
+#+name: eq::bsbound2
+\begin{equation}
+u(x,t )\sim xe^{-D(T-t)}, \quad x \rightarrow \infty,
+\end{equation}
+and the initial market condition:
+#+name: eq::bsbound3
+\begin{equation}
+u(x, T) = \max \{x-K,0\}, \quad x \in (0,\infty],
+\end{equation}
+
+# +ATTR_LATEX: :float t :width 0.7\linewidth :height 0.4\textheight :keepaspectratio
+#+name: fig::optvaltostock
+#+caption: Option premium value vs underlying stock value
+[[file:images/solution_value.pdf]]
+
+# +ATTR_LATEX: :float t :width 0.7\linewidth :height 0.4\textheight :keepaspectratio
+#+name: fig::solspace
+#+caption: The possible solution space for the direct problem of the Black-Scholes PDE
+[[file:images/solution_space.pdf]]
+
+
+The payoff of the option is given in equation ([[eq::eurocallpayoff]]), and is shown in Figure ([[fig::optvaltostock]]). The solution to equations ([[eq::BlackScholes]]-[[eq::bsbound3]]) lies within the bounds of Figure ([[fig::solspace]]). The maximal value of the call option as $x \rightarrow \infty$ is $xe^{-D(T-t)}$ ([[eq::bsbound2]]), and the value of the option at maturity is always $\max\{x-K,0\}$ ([[eq::bsbound3]]). This creates a "box" within which the Black-Scholes PDE may be satisfied, with a left boundary equal to 0, and a right boundary equal to the upper right limit, making the solution a càdlàg function.  The direct problem of option pricing seeks the lower boundary corresponding to the current stock value $(X_0)$ at the current time $t=0$, with the solution being $u(X_0,0)$.
+
+
+
+Black-Scholes PDE can be converted into the heat equation, which has a known solution. It is sufficient to find a solution for either a call or put option, as the put-call parity ([[eq::pcparity]]) links the price of call and put options with the same maturity and strike price.
+
+
+
+Following [cite:@wilmottOptionPricingMathematical1993 p. 76], consider the change of variables:
+#+name: eq::scholessubs
+\begin{equation}
+x = Ke^y, \quad t = T - \frac{\tau}{\frac{1}{2}\sigma^2}, \quad u = K v (y, \tau),
+\end{equation}
+taking partial derivatives:
+#+name: eq::uxpart
+\begin{equation}
+\frac{\partial u}{\partial x} = \frac{\partial u}{\partial y} \cdot \frac{\partial y}{\partial x} = \frac{K}{x} \frac{\partial v}{\partial y},
+\end{equation}
+\[\frac{\partial^2 u}{\partial x^2} = \frac{\partial}{\partial x} \left(\frac{\partial u}{\partial x} \right), \]
+via chain rule:
+\[\frac{\partial}{\partial x} = \frac{\partial y }{\partial x} \cdot \frac{\partial}{\partial y} = \frac{1}{x} \cdot \frac{\partial}{\partial y}, \]
+meaning that:
+#+name: eq::u2xpart
+\begin{equation}
+\frac{\partial^2 u}{\partial x^2} = \frac{1}{S} \cdot \frac{\partial}{\partial y} \left(\frac{K}{S} \frac{\partial V}{\partial x} \right) = \frac{K}{S^2} \left(\frac{\partial^2 v}{\partial y^2} - \frac{\partial v}{\partial y} \right)
+\end{equation}
+and finally:
+#+name: eq::utpart
+\begin{equation}
+\frac{\partial u}{\partial t} = \frac{\partial u}{\partial \tau} \cdot \frac{\partial \tau}{\partial t} = - \frac{1}{2} \sigma^2 K \frac{\partial v}{\partial \tau}.
+\end{equation}
+returning equations ([[eq::uxpart]]), ([[eq::u2xpart]]), and ([[eq::utpart]]) into the original equation ([[eq::BlackScholes]]):
+\[-\frac{1}{2}\sigma^2 v_\tau + \frac{1}{2} \sigma^2 \left(\frac{\partial^2 v}{\partial y^2} - \frac{\partial v}{\partial y} \right) + (r-D) \frac{\partial v}{\partial y} - rv = 0, \]
+which simplifies into:
+\[v_\tau = v_{y y} - v_y + \frac{r-D}{\frac{1}{2} \sigma^2} v_y - \frac{r}{\frac{1}{2}\sigma^2} = 0, \]
+where $v_z$ corresponds to the first derivative of $v$ with respect to $z$. Consolidating terms:
+#+name: eq::absubs
+\begin{equation}
+a := \frac{r-D}{\frac{1}{2} \sigma^2}, \quad b = \frac{r}{\frac{1}{2}\sigma^2},
+\end{equation}
+then the Black-Scholes PDE becomes:
+#+name: eq::bsheateq
+\begin{equation}
+v_\tau = v_{y y} + (a-1) v_y - bv.
+\end{equation}
+This can be turned into the heat equation with a calibrated transformation, let:
+\[v(y, \tau) = e^{\alpha y + \beta \tau} w(y, \tau), \]
+similarly to the last substitution, the transformed partial derivatives:
+\[\frac{\partial v}{\partial \tau} = \beta e^{\alpha y + \beta \tau} w + e^{\alpha y + \beta \tau} w_\tau \]
+\[\frac{\partial v}{\partial y} = \alpha e^{\alpha y + \beta \tau} w + e^{\alpha y + \beta \tau} w_y \]
+\[\frac{\partial^2 v}{\partial x^2} = \alpha^2 e^{\alpha y + \beta \tau} w + 2 \alpha e^{\alpha y + \beta \tau} w_y + e^{\alpha y + \beta \tau} w_{y y}, \]
+Returning and simplifying these three equations into to the equation ([[eq::bsheateq]]):
+\[\beta w + w_\tau = \alpha^2 w + 2 \alpha w_y + w_{y, y} + (a-1) (\alpha w + w_y) -bw, \]
+the $w$ and $w_y$ terms can be eliminated by having all terms across the equation become equivalent. This can be done by altering \alpha and \beta such that the terms will always cancel out.
+\[w: \; \; \beta = \alpha^2 + (a - 1)\alpha - b, \]
+\[w_y: \; \; 2 \alpha + (a - 1) = 0, \]
+this is a linear system of equations with the unique solution:
+\[\alpha = -\frac{a-1}{2}, \quad \beta = -\frac{1}{4} (a-1)^2 -b, \]
+consequently, the function:
+#+name: eq::truevalv
+\begin{equation}
+v(y, \tau) = e^{-\frac{a-1}{2} y - \left(\frac{1}{4} (a-1)^2 + b \right) \tau} w(y, \tau),
+\end{equation}
+entered into the third substitution in equation ([[eq::scholessubs]]) satisfies:
+#+name: eq::bstrueheat
+\begin{equation}
+\frac{\partial w}{\partial \tau} = \frac{\partial^2 w}{\partial y^2}.
+\end{equation}
+Converting the original boundary conditions (([[eq::bsbound1]]) and ([[eq::bsbound2]])) to match equation ([[eq::bstrueheat]]):
+\[u(x,T) = \max \{x - K, 0\} \Rightarrow Kv(y, T) = \max \{Ke^y - K,0\}  \]
+#+name: eq::bstrueright
+\begin{equation}
+\Rightarrow v(y, T) = \max(e^y - 1)
+\end{equation}
+#+name: eq::bstrueleft
+\begin{equation}
+w(y,0) = w_0 (y) = e^{-\frac{a-1}{2} y} \max \{e^y -1, 0\} \Rightarrow w(x,0) = \max \left\{e^{\frac{a+1}{2} y} - e^{\frac{a-1}{2} y },0 \right\},
+\end{equation}
+for $\left|y \right| < \infty$ and $\tau \geq 0$. The function $u(y, \tau)$ is the classical heat equation, with known solution:
+\[w(y, \tau) = \frac{1}{2\sqrt{\pi \tau}} \int^\infty_{-\infty} w_0 (s) \exp \left(-\frac{(y-s)^2}{4 \tau} \right)  ds,  \]
+by setting:
+\[y' = \frac{s-y}{\sqrt{2\tau}}, \]
+then:
+\[w(y, \tau) = \frac{1}{\sqrt{2\pi}} \frac{1}{\sqrt{2\tau}} \int^\infty_{-\infty} w_0 (\sqrt{2 \tau} y' + y) \cdot \sqrt{2\tau} \exp \left(-\frac{y'^2}{2} \right) dy',  \]
+since the option can take either a variable value or 0, the cases are:
+\[w_0 (y) = \begin{cases} e^{\frac{a+1}{2} y} - e^{\frac{a-1}{2}y}, & y > 0 \\ 0, & y \leq 0 \end{cases} \]
+Leaving only the case where $y>0$, yielding the integrals:
+#+name: eq::bsheatints
+\begin{equation}
+\frac{1}{\sqrt{2\pi}} \int^\infty_{-\frac{y}{\sqrt{2 \tau}}} e^{\frac{a+1}{2} (\sqrt{2 \tau} y' + y)} e^{- \frac{y'^2}{2}} \cdot d y' - \frac{1}{\sqrt{2\pi}} \int^\infty_{-\frac{y}{\sqrt{2 \tau}}} e^{\frac{a-1}{2} (\sqrt{2 \tau} y' + y)} e^{- \frac{y'^2}{2}} \cdot d y' = I_1 - I_2,
+\end{equation}
+where the integrals are:
+#+name: eq::bsheati1
+\begin{equation}
+I_1 = \frac{1}{\sqrt{2\pi}} \int^\infty_{-\frac{y}{\sqrt{2 \tau}}} e^{\frac{a+1}{2} (\sqrt{2 \tau} y' + y)} e^{- \frac{y'^2}{2}} d y',
+\end{equation}
+#+name: eq::bsheati2
+\begin{equation}
+I_2 = \frac{1}{\sqrt{2\pi}} \int^\infty_{-\frac{y}{\sqrt{2 \tau}}} e^{\frac{a-1}{2} (\sqrt{2 \tau} y' + y)} e^{- \frac{y'^2}{2}}  d y'.
+\end{equation}
+Evaluating the first integral ([[eq::bsheati1]]), completing the square shows that:
+\[\frac{y'^2 - (a+1)\sqrt{2\tau} y'}{2} = \frac{\left(y' - \frac{(a+1)\sqrt{2\tau}}{2} \right)^2}{2} - \frac{(a+1)^2 2\tau}{4}, \]
+which changes the integral to:
+\[I_1 = e^{\frac{a+1}{2}y + \frac{(a+1)^2 \tau}{4}} \cdot \frac{1}{\sqrt{2\pi}} \int^\infty_{-\frac{y}{\sqrt{2\tau}}} e^{- \frac{\left(y' - \frac{(a+1)\sqrt{2\tau}}{2} \right)^2}{2}} dy'.\]
+If this substitution is made:
+\[\rho = y' - \frac{(a+1)\sqrt{2\tau}}{2} \]
+then the right hand side becomes the standard normal CDF between the boundaries:
+\[-d_1 < \rho < \infty, \]
+where:
+#+name: eq::bsd1
+\begin{equation}
+d_1 = \frac{y}{\sqrt{2\tau}} + \frac{(a+1) \sqrt{2\tau}}{2},
+\end{equation}
+the first integral ([[eq::bsheati1]]) therefore has solution:
+#+name: eq::bsheati1sol
+\begin{equation}
+I_1 = \exp \left(\frac{a+1}{2} y + \frac{(a+1)^2 \tau}{4} \right) \Phi(d_1)
+\end{equation}
+where:
+\[\Phi(d_1) = \frac{1}{\sqrt{2\pi}} \int^{d_1}_{-\infty} e^{-\frac{z^2}{2}} \cdot dz, \]
+where $\Phi(.)$ is the Gaussian standard cumulative distribution function (CDF). The second integral in equation ([[eq::bsheati2]]) has the same structure as integral ([[eq::bsheati1]]), except with a $a-1$ wherever $I_1$ has $a+1$, meaning that the solution for the second integral is:
+#+name: eq::bsheati2sol
+\begin{equation}
+I_2 = \exp \left(\frac{a-1}{2} y + \frac{(a-1)^2 \tau}{4} \right) \Phi(d_2),
+\end{equation}
+where:
+#+name: eq::bsd2
+\begin{equation}
+d_2 = \frac{y}{\sqrt{2\tau}} + \frac{(a-1) \sqrt{2\tau}}{2},
+\end{equation}
+\[\Phi(d_2) = \frac{1}{\sqrt{2\pi}} \int^{d_2}_{-\infty} e^{-\frac{z^2}{2}} \cdot dz, \]
+In order to convert this back into the terms of the original PDE, the substitutions can be reversed. \tau comes from equation ([[eq::scholessubs]]) and $a$ from equation ([[eq::absubs]]):
+\[\sqrt{2 \tau} = \sqrt{T-t} \sigma, \quad a+1 = \frac{R - D + 1/2 \sigma^2}{1/2 \sigma^2}, \]
+this permits a solution for $d_1$ from equation ([[eq::bsd1]]) and $d_2$ from equation ([[eq::bsd2]]):
+\[d_1 = \frac{\ln \left(x/K \right)}{\sigma \sqrt{T-t}} + \frac{(a+1)\sigma \sqrt{T-t}}{2}, \]
+#+name: eq::bsd1true
+\begin{equation}
+d_1 = \frac{\ln \left(x/K \right) + (R-D+\sigma^2/2)(T-t)}{\sigma \sqrt{T-t}},
+\end{equation}
+since $d_2$ is equivalent to $d_1$ with $a-1$ instead of $a+1$:
+#+name: eq::bsd2true
+\begin{equation}
+d_2 = \frac{\ln \left(x/K \right) + (R-D-\sigma^2/2)(T-t)}{\sigma \sqrt{T-t}}.
+\end{equation}
+The PDE must also be converted. Between ([[eq::truevalv]]) and ([[eq::bsheatints]]), the remainder is:
+#+name: eq::bsconv
+\begin{equation}
+U(x,t) = Kv \left(y, \tau \right) = K e^{-\frac{a-1}{2} y - \left(\frac{1}{4} (a-1)^2 + b \right) \tau} (I_1 \Phi (d_1) - I_2 \Phi (d_2)).
+\end{equation}
+This can be calculated in two chunks. For the first half:
+\[e^{-\frac{a-1}{2} y - \left(\frac{1}{4} (a-1)^2 + b \right) \tau} I_1 \Phi (d_1) = e^{-\frac{a-1}{2} y - \left(\frac{1}{4} (a-1)^2 + b \right) \tau } \exp \left(\frac{a+1}{2} y + \frac{(a+1)^2 \tau}{4} \right) \Phi(d_1),  \]
+\[= \exp \left(\ln \left(\frac{x}{K} \right) + \frac{(a+1)^2 - (a-1)^2}{4}\tau - b \tau \right) = \frac{x}{K} \exp((a-b) \tau) \Phi (d_1), \]
+
+\[= \frac{x}{K} \exp \left(\left(\frac{R-D}{1/2 \sigma^2} - \frac{R}{1/2 \sigma^2} \right)(T-t) \frac{1}{2} \sigma^2 \right) \Phi (d_1). \]
+
+#+name: eq::bsi1conv
+\begin{equation}
+e^{-\frac{a-1}{2} y - \left(\frac{1}{4} (a-1)^2 + b \right) \tau} I_1= \frac{x}{K} e^{-D(T-t)} \Phi(d_1).
+\end{equation}
+
+The second integral in ([[eq::bsconv]]) is simpler,
+\[e^{-\frac{a-1}{2} y - \left(\frac{1}{4} (a-1)^2 + b \right) \tau} I_2 \Phi (d_2) = e^{-\frac{a-1}{2} y - \left(\frac{1}{4} (a-1)^2  + b \right) \tau} \exp \left(\frac{a-1}{2} y + \frac{(a-1)^2 \tau}{4} \right) \Phi(d_2)  \]
+
+\[= \exp \left(- \frac{a-1}{2} y - \frac{1}{4} (a-1)^2 \tau - b \tau + \frac{a-1}{2} y + \frac{1}{4} (a-1)^2 \tau \right) \Phi (d_2) \]
+
+\[= \exp(-b \tau) \Phi(d_2) = \exp \left(\frac{-R}{1/2 \sigma^2} \cdot (T-t) \frac{1}{2} \sigma^2 \right) \Phi(d_2) \]
+
+#+name: eq::bsi2conv
+\begin{equation}
+e^{-\frac{a-1}{2} y - \left(\frac{1}{4} (a-1)^2 + b \right) \tau} I_2 = e^{-R(T-t)} \Phi(d_2)
+\end{equation}
+
+Combining ([[eq::bsi1conv]]) and ([[eq::bsi2conv]]) according to ([[eq::bsconv]]):
+
+\[v(y, \tau) = \frac{x}{K} e^{-D(T-t)} \Phi (d_1) - e^{-R(T-t)} \Phi(d_2),  \]
+
+feeding this back into equation ([[eq::bsconv]]), provides the solution to the Black-Scholes PDE when $D>0$:
+
+#+name: eq::blackScholesSols
+\begin{equation}
+u(x,t) = x e^{-D(T-t)} \Phi (d_1) - K e^{-R(T-t)} \Phi (d_2),
+\end{equation}
+
+where:
+
+#+name: eq:: BlackScholesd1
+\begin{equation}
+d_1 = \frac{\ln \left(x/K \right) + (R-D+\sigma^2/2)(T-t)}{\sigma \sqrt{T-t}},
+\end{equation}
+
+#+name: eq:: BlackScholesd2
+\begin{equation}
+d_2 = \frac{\ln \left(x/K \right) + (R-D-\sigma^2/2)(T-t)}{\sigma \sqrt{T-t}}.
+\end{equation}
+
+When $D=0$, these answers coincide with the solutions derived in [cite:@wilmottOptionPricingMathematical1993 p. 79].
+
+
+** Time-variant volatility
+
+
+Volatility or the interest rate may vary across time, but Wilmott and Harper showcased a method for solving a direct problem of the Black-Scholes PDE under these conditions. Taken from question 5 of [cite:@wilmottOptionPricingMathematical1993 pp. 86-87].
+
+Consider the Black-Scholes PDE:
+#+name: eq::BSrsigt
+\begin{equation}\frac{\partial u}{\partial t} + \frac{1}{2} \sigma^2(t) x^2 \frac{\partial^2 y}{\partial x^2} + R(t)x \frac{\partial u}{\partial x} - R(t)u = 0,
+\end{equation}
+in the simplified case where $D = 0$. Take the substitutions:
+#+name: eq::BSrsigtsubs
+\begin{equation}
+x = Ke^y, \quad u(x,t') = Ev(y,t'), \quad t = T-t'.
+\end{equation}
+These are reminiscent of ([[eq::scholessubs]]), but scale time by the beginning rather than the "density". Taking partial derivatives of ([[eq::BSrsigtsubs]]):
+#+name: eq::firstpartialrst
+\begin{equation}
+\frac{\partial u}{\partial t} = - \frac{\partial v}{\partial t'} K,
+\end{equation}
+\begin{equation}
+\frac{\partial u}{\partial x} = \frac{K}{x} \frac{\partial v}{\partial y},
+\end{equation}
+#+name: eq::lastpartialrst
+\begin{equation}
+\frac{\partial^2 u}{\partial x^2} = \frac{K}{x^2} \left(\frac{\partial^2 v}{\partial y^2} - \frac{\partial v}{\partial y} \right).
+\end{equation}
+Entering ([[eq::firstpartialrst]])-([[eq::lastpartialrst]]) into ([[eq::BSrsigt]]):
+\[-\frac{\partial v}{\partial t} + \frac{1}{2} \sigma^2(t)  (v_{yy} - v_y) + R(t) v_y - R(t)v = 0 \]
+#+name: eq::rstintermediate1
+\begin{equation}
+\Rightarrow \frac{\partial v}{\partial t'} = \frac{1}{2} \sigma^2 (t) \frac{\partial^2 v}{\partial y^2} + (R(t') - 1/2 \sigma^2 (t')) \frac{\partial v}{\partial y} - R(t') v.
+\end{equation}
+
+Consider the substitution:
+\[d \tilde{\tau} = \frac{1}{2} \sigma^2 (t') dt', \]
+such that:
+#+name: eq::rsttausub
+\begin{equation}
+\frac{1}{1/2 \sigma^2 (t')} \frac{\partial v}{\partial t'} = \frac{\partial v}{\partial \tilde{\tau}}.
+\end{equation}
+Inserting ([[eq::rsttausub]]) into ([[eq::rstintermediate1]]):
+\[\frac{\partial v}{\partial \tilde{\tau}} = \frac{\partial^2 v}{\partial y^2} + \left(\frac{R(\tilde{\tau})}{1/2 \sigma^2 (\tilde{\tau})} - 1 \right) \frac{\partial v}{\partial y} - \frac{R(\tilde{\tau})}{1/2 \sigma^2 (\tilde{\tau})} V, \]
+simplifying terms:
+\[a(\tilde{\tau}) = \frac{R(\tilde{\tau})}{1/2 \sigma^2 (\tilde{\tau})} - 1, \quad b(\tilde{\tau}) \frac{R(\tilde{\tau})}{1/2 \sigma^2 (\tilde{\tau})}, \]
+the equation takes form:
+#+name: eq::bigrstsimps
+\begin{equation}
+\frac{\partial v}{\partial \tilde{\tau}} = \frac{\partial^2 v}{\partial y^2} + a(\tilde{\tau}) \frac{\partial v}{\partial y} - b(\tilde{\tau}) v.
+\end{equation}
+There exists a generalised solution for a subset of this problem. Take:
+#+name: eq::generalisedsubsetrst
+\begin{equation}
+\frac{\partial v}{\partial \tilde{\tau}} = a (\tilde{\tau}) \frac{\partial v}{\partial y} - b(\tilde{\tau}) v,
+\end{equation}
+apply the method of characteristics:
+\[\frac{\partial v}{\partial \tilde{\tau}} - a(\tilde{\tau}) \frac{\partial v}{\partial y} + b(\tilde{\tau}) v = 0, \]
+this equation implies that:
+\[\frac{\partial y}{\partial \tilde{\tau}} = -a(\tilde{\tau}), \]
+the problem can be converted to an ordinary differential equation by defining a variable $A(\tilde{\tau})$ such that:
+#+name: strategyArst
+\begin{equation}
+A(\tilde{\tau}) := \int^{\tilde{\tau}}_0 a(s)  ds.
+\end{equation}
+This provides stationary measure:
+\[y + A(\tilde{\tau}), \]
+which is functionally a constant along the solution plane, stabilising the equation. Observe further from ([[eq::generalisedsubsetrst]]) that:
+\[\frac{\partial v}{\partial \tilde{\tau}} = -b (\tilde{\tau}) v \]
+\[\frac{v_{\tilde{\tau}}}{v} = -b(\tilde{\tau}) \]
+\[v = C \exp \left(- \int^{\tilde{\tau}}_0 b(s) \cdot ds \right) \]
+Define a variable:
+\[B:= \int^{\tilde{\tau}}_0 b(s) \cdot ds \]
+Then, multiply the discount by the stationary measure:
+#+name: eq::strategyBrst
+\begin{equation}
+\frac{\partial v}{\partial \tilde{\tau}} = e^{-B(\tilde{\tau})} F(x + A(\tilde{\tau})),
+\end{equation}
+where $F(.)$ is some distribution function that depends on the boundary conditions. Returning to the full scale problem ([[eq::rstintermediate1]]):
+\[v_{\tilde{\tau}} = v_{yy} + a(\tilde{\tau}) v_y - b(\tilde{\tau}) v, \]
+eliminating the $v$ and $v_y$ terms permits a similarity solution, so based on ([[strategyArst]]), define the relation:
+\[v(\tilde{y}, \tilde{\tau}) = v (y + A(\tilde{\tau}), \tilde{\tau}) \]
+For convenience, $\tilde{v} := v(\tilde{y}, \tilde{\tau})$. We can now take partial derivatives:
+#+name: eq::firstpartialrstnext
+\begin{gather}
+\frac{\partial \tilde{v}}{\partial y} = \frac{\partial v}{\partial y}, \\
+\frac{\partial^2 \tilde{v}}{\partial y^2} = \frac{\partial^2 v}{\partial y^2},
+\end{gather}
+applying multi-variable chain rule:
+#+name: eq::lastpartialrstnext
+\begin{equation}
+\frac{\partial \tilde{v}}{\partial v(\tilde{y}, \tilde{\tau})} = \frac{\partial v}{\partial \tilde{\tau}} + A'(\tilde{y}, \tilde{\tau}) \frac{\partial v}{\partial \tilde{y}}.
+\end{equation}
+Returning ([[eq::firstpartialrstnext]])-([[eq::lastpartialrstnext]]) to the equation ([[eq::rstintermediate1]]):
+#+name: eq::rstalmostthere
+\begin{equation}
+\tilde{v}_{\tilde{\tau}} + a(\tilde{\tau}) \tilde{v}_{\tilde{y}} =  \tilde{v}_{\tilde{y} \tilde{y}} + a (\tilde{\tau}) \tilde{v}_{\tilde{y}} - b(\tilde{\tau}) \tilde{v},
+\end{equation}
+the $\tilde{v}_{\tilde{y}}$ terms immediately cancel, leaving only the interest rate distortion. Employing the method from ([[eq::strategyBrst]]), define a variable:
+\[v(\tilde{y}, \tilde{\tau}) = e^{-B(\tilde{\tau})} V(\tilde{y}, \tilde{\tau}), \]
+with $B(\tilde{\tau}) = \int^{\tilde{\tau}}_0 b(s) ds$. Taking partial derivatives,
+#+name: eq::Icannotnamemorerst1
+\begin{equation}
+\frac{\partial \tilde{V}}{\partial \tilde{\tau}} = -B'(\tilde{\tau}) e^{B(\tilde{\tau})} V + e^{-B(\tilde{\tau})} V_{\tilde{\tau}},
+\end{equation}
+#+name: eq::Icannotnamemorerst2
+\begin{equation}
+\frac{\partial^2 \tilde{V}}{\partial \tilde{y}^2} = e^{-B(\tilde{\tau})} V_{\tilde{y}, \tilde{y}},
+\end{equation}
+$B(\tilde{\tau})$ is the integral of $b(\tilde{\tau})$, so feeding ([[eq::Icannotnamemorerst1]])-([[eq::Icannotnamemorerst2]]) back into ([[eq::rstalmostthere]]):
+\[-b(\tilde{\tau}) e^{B(\tilde{\tau})} V + e^{-B(\tilde{\tau})} V_{\tilde{\tau}} = e^{-B(\tilde{\tau})} V_{\tilde{x}, \tilde{x}} - b(\tilde{\tau}) \tilde{v}, \]
+after cancelling down:
+\[\frac{\partial V}{\partial \tilde{\tau}} = \frac{\partial^2 V}{\partial \tilde{x}^2}. \]
+This method successfully recovers the heat equation from the Black-Scholes PDE when $\sigma$ and $R$ are functions of $t$. In natural language, the original data changed in the "placement" of the time periods, these time periods were then scaled by volatility (where time "slowed down" in highly volatile periods), and risk-free rate changes were then discounted.
+
+
+** Independently time and space variable volatility
+
+In a paper addressing the Black-Scholes inverse problem, Bouchouev and Isakov derive a heat equation from the Black-Scholes PDE in the case where volatility is time and space dependent such that:
+\[\sigma(s,t) = \psi(s) \rho (t), \]
+where \psi is the parametric volatility in space and \rho is the numerically solved volatility function in time, and both are assumed to be independent [cite:@bouchouevUniquenessStabilityNumerical1999 p. R100]. As stated in equation [[eq::BlackScholes]]:
+\[\frac{\partial u}{\partial t} + \frac{1}{2} \sigma^2 x^2 \frac{\partial^2 u}{\partial x^2} + (R-D) x \frac{\partial u}{\partial x} - Ru = 0; \quad D > 0. \]
+
+Consider substitutions:
+
+#+name: eq::boukov1999subs
+\begin{equation}
+\tau = \int^T_t \rho^2 (y) dy, \quad \xi = x e^{\mu (T-t)}, \quad v(\xi, \tau) = u(s,t) e^{r(T-t)},
+\end{equation}
+
+For the partial derivatives:
+
+\[\frac{\partial u}{\partial t} = \frac{\partial}{\partial t} \left(v(\xi (t), \tau(t)) e^{-r(T-t)} \right), \]
+
+#+name: eq::isachevsubutstart
+\begin{equation}
+\frac{\partial u}{\partial t} = r ve^{-r(T-t)} + e^{-r(T-t)} \left(\frac{\partial v}{\partial \xi} \cdot \frac{\partial \xi}{\partial t} + \frac{\partial v}{\partial \tau} \cdot \frac{\partial \tau}{\partial t} \right),
+\end{equation}
+
+evaluating these components individually,
+
+#+name: eq::isachevsubxit
+\begin{equation}
+\frac{\partial v}{\partial \xi} \cdot \frac{\partial \xi}{\partial t} = - \mu x e^{\mu (T-t)} \cdot \frac{\partial v}{\partial \xi},
+\end{equation}
+
+#+name: eq::isachevsubtaut
+\begin{equation}
+\frac{\partial v}{\partial \tau} \cdot \frac{\partial \tau}{\partial t} = - \rho^2 (t) \frac{\partial \tau}{\partial t}.
+\end{equation}
+
+Returning ([[eq::isachevsubxit]]) and ([[eq::isachevsubxit]]) into equation ([[eq::isachevsubutstart]]):
+
+#+name: eq::isachevsubut
+\begin{equation}
+\frac{\partial u}{\partial t} = ru - e^{-r(T-t)} \left(\mu \xi \frac{\partial v}{\partial \xi} + \rho^2 (t) \frac{\partial v}{\partial \tau} \right).
+\end{equation}
+
+For the next partial derivative:
+
+\[\frac{\partial u}{\partial x} = \frac{\partial}{\partial x} \left(v\left(\xi (x), \tau \right) e^{-r(T-t)} \right), \]
+
+similarly to previous cases,
+
+\[\frac{\partial v}{\partial x} = \frac{\partial v}{\partial \xi} \cdot \frac{\partial \xi}{\partial x} = e^{\mu (T-t)} \frac{\partial v}{\partial \xi}, \]
+
+meaning that the original substitution reduces to:
+
+#+name: eq::isachevsubux
+\begin{equation}
+\frac{\partial u}{\partial x} = \frac{\xi}{x} e^{r(T-t)} \frac{\partial v}{\partial \xi},
+\end{equation}
+
+where $\xi/x$ comes from the substitution in ([[eq::boukov1999subs]]). For the final partial derivative,
+
+\[\frac{\partial^2 u}{\partial x^2} = \frac{\partial}{\partial x} \left(\frac{\partial u}{\partial x} \right) = \frac{\partial \xi}{\partial x} \cdot \frac{\partial}{\partial \xi} \left(e^{(\mu - r)(T-t)} \frac{\partial v}{\partial \xi} \right), \]
+
+#+name: eq::isachevsubu2x2
+\begin{equation}
+\frac{\partial^2 u}{\partial x^2} = \frac{\xi^2}{x^2} e^{-r(T-t)} \frac{\partial^2 v}{\partial \xi^2}.
+\end{equation}
+
+Feeding back ([[eq::isachevsubut]]), ([[eq::isachevsubux]]), and ([[eq::isachevsubu2x2]]) into ([[eq::BlackScholes]]), we get:
+
+\[ru - \mu \xi v_\xi - \rho^2 (t) v_\tau + \frac{1}{2} \psi^2 (s) \rho^2 (t) \xi^2 v_{\xi, xi} + r \xi v_\xi - ru = 0, \]
+
+In the Black-Scholes model, $\mu = r$, so:
+
+\[\rho^2 (t) v_\tau = \frac{1}{2} \psi^2 (s) \rho^2 (t) \xi^2 v_{\xi, \xi} + (r-\mu) \xi v_\xi, \]
+
+yielding the relation:
+
+\[v_\tau = \frac{1}{2} \psi^2 (s) \xi^2 v_{\xi, \xi}, \]
+
+as stated in [cite:@bouchouevUniquenessStabilityNumerical1999 p. R100].
+
+
+* Dupire's equation
+:PROPERTIES:
+:ORDERED:  t
+:END:
+:LOGBOOK:
+CLOCK: [2026-06-17 Wed 12:49]--[2026-06-17 Wed 12:50] =>  0:01
+CLOCK: [2026-06-16 Tue 10:54]--[2026-06-16 Tue 11:38] =>  0:44
+:END:
+
+Dupire's equation is a conversion of the Black-Scholes PDE under the probability density function (PDF) of $x$. The stock price satisfies differential equation:
+\[dx_t = x_t \mu dt + x_t \sigma dW_t, \]
+or, as an integral:
+\[x_t - x_0 = \int^{t+\tau}_t x_t \mu dt + \int^{t + \tau}_t x_t \sigma dW_t, \]
+where $x_0$ is the initial value of the stock and \tau is a time increment. This is a Langevin system, and consequently the PDF $\phi(x,t;x,t+\tau)$ of the variable $x$ is given by:
+#+name: eq::fokkerplanck
+\begin{equation}
+\frac{\partial \phi(x,t:x,t+\tau)}{\partial t} = \sum^\infty_{n=1} \left(- \frac{\partial}{\partial x} \right)^n D_n (x,t) \phi(x,t),
+\end{equation}
+Where $D_n (x,t)$ is the Kramers-Moyal coefficient:
+#+name: eq::kramersmoyal
+\begin{equation}
+D_n(x,t) = \frac{1}{n!} \underset{\tau \rightarrow 0}{\lim} \frac{1}{\tau} M_n (x,t)
+\end{equation}
+where $M_n$ is the /n/-th moment of the variable, and \tau is some minimised time increment, as per Chapter 2 of [cite:@kwokLangevinFokkerPlanckEquations2018]. By the properties of an Itô process, $x$ only has two moments:
+\[M_1 = \mu \tau, \quad M_2 = \sigma^2 \tau, \]
+since higher moments are lost in the limit. Using equation ([[eq::kramersmoyal]]) the Kramers-Moyal coefficients are:
+#+name: eq::kramerscoeffs
+\begin{equation}
+D_1 = \underset{\tau \rightarrow 0}{\lim} \frac{1}{\tau} \mu \tau = \mu, \; \; D_2 = \frac{1}{2} \underset{\tau \rightarrow 0}{\lim} \frac{1}{\tau} \sigma^2 \tau = \frac{1}{2} \sigma^2.
+\end{equation}
+Recall that in the arbitrage-free Black-Scholes model, $\mu = R-D$. Inserting the results from ([[eq::kramerscoeffs]]) into equation ([[eq::fokkerplanck]]):
+#+name: eq::dupirefokker
+\begin{equation}
+\frac{\partial \phi(x,t;x,t+\tau)}{\partial t} = - \frac{\partial}{\partial x} ((R-D)x \phi) + \frac{1}{2} \frac{\partial^2}{\partial x^2} (\sigma^2 x^2 \phi).
+\end{equation}
+Recall that the fair price of a European call option is:
+\[u(T,K) = e^{-R\tau} \cdot \mathbb{E} \left[\max \{(x-K), 0\} \right], \]
+where $\tau = T-t$ is the time increment. $\phi(x,t; K,T)$ is the risk-neutral probability distribution of the stock price $x$ for any strike $K, so the price of the option is:
+#+name: eq::firstuval
+\begin{equation}
+u(T,K) = e^{-R\tau} \int^\infty_K (y-K) \phi(y,T) \cdot dy.
+\end{equation}
+Differentiating once with respect to $K$:
+\[\frac{\partial u}{\partial K} = \frac{\partial}{
+\partial K} \int^\infty_K (y-K) \phi(y,T) \cdot dy, \]
+The differential can be taken into the integral:
+#+name: eq::partuval
+\begin{equation}
+\frac{\partial u}{\partial K} = - \int^{\infty}_K \phi(y,T) \cdot dy = -Q(x \geq K),
+\end{equation}
+where $Q(x \geq K)$ is the CDF of $x$ above $K$, differentiating once more:
+#+name: eq::duEQphi
+\begin{equation}
+\frac{\partial^2 u}{\partial K^2} = \phi (K,T).
+\end{equation}
+
+Since $u_{KK} = \phi(K,T)$, equation ([[eq::firstuval]]), can be differentiated once with respect to \tau:
+\[\frac{\partial u}{\partial \tau} = e^{-R\tau} \int^\infty_K (y-K) \frac{\partial}{\partial \tau} \phi(y,T) \cdot dy - R e^{-R\tau} \int^\infty_K (y-K) \phi(y,T), \]
+The partial derivative with respect to time of the PDF is the Fokker-Planck equation ([[eq::dupirefokker]]), and by the definition in equation ([[eq::firstuval]]), the rightmost value reduces to $Ru$. The result is:
+\[\frac{\partial u}{\partial \tau} = e^{-R\tau} \int^\infty_K (y-K) \left(- \frac{\partial}{\partial y} ((R-D) y \phi) + \frac{1}{2} \frac{\partial^2}{\partial y^2} \left(\sigma^2 y^2 \phi \right) \right) \cdot dy - Ru, \]
+which reduces to the system:
+#+name: eq::dupireintegral
+\begin{equation}
+e^{-R\tau} \left(I_1 + I_2 \right) - Ru,
+\end{equation}
+with integrals:
+#+name: eq::dupirefirstint
+\begin{equation}
+I_1 = -\int^\infty_K (y-K) \frac{\partial}{\partial y} ((R-D) y\phi) \cdot dy,
+\end{equation}
+and
+#+name: eq::dupiresecondint
+\begin{equation}
+I_2 = \frac{1}{2} \int^\infty_K (y-K) \frac{\partial^2}{\partial y^2} (\sigma^2 y^2 \phi) \cdot dy.
+\end{equation}
+
+Evaluating the first integral ([[eq::dupirefirstint]]):
+\[I_1 = - \int^\infty_K (y-K) \frac{\partial}{\partial K} ((R-D) y \phi) \cdot dy. \]
+Differentiating the left hand term and integrating the second, integration by parts yields:
+\[I_1 = - \left((y-K)(R-D)y \phi - \int^\infty_K (R-D)y \phi \cdot dy  \right). \]
+For the leftmost term:
+\[\left[(y-K)(R-D)y \phi(y,T) \right]^\infty_K = \begin{cases} 0, & y \rightarrow K \\ 0, & y \rightarrow \infty \end{cases} \]
+As the value of $(y-K)$ is 0 on the upper boundary and the probability \phi of a value $x$ as $x \rightarrow \infty$ tends to 0 much faster than $x^2$ tends towards \infty (since $x$ follows a log-Gaussian distribution). This leaves:
+\[I_1 = \int^\infty_K (R-D) y\phi \cdot dy, \]
+This is too difficult to evaluate directly, but:
+\[e^{-R\tau} I_1 = e^{-R \tau} (R-D) \left(\int^\infty_K (y-K) \phi \cdot dy + \int^\infty_K K \phi \cdot dy \right).  \]
+The value of the left hand term is known from ([[eq::firstuval]]) and the value of the right hand term from equation ([[eq::partuval]]), giving:
+#+name: eq::i1val
+\begin{equation}
+e^{-R\tau} I_1 = (R-D) \left(u-K \frac{\partial u}{\partial K} \right).
+\end{equation}
+For the second integral ([[eq::dupiresecondint]]):
+\[I_2 = \frac{1}{2} \int^\infty_K (y-K) \frac{\partial^2}{\partial y^2} (\sigma^2 y^2 \phi) \cdot dy, \]
+differentiating once:
+\[e^{-R\tau} I_2 = -\frac{1}{2} e^{-R \tau} \int^\infty_K \frac{\partial}{\partial y} (\sigma^2 y^2 \phi) \cdot dy, \]
+the upper value will be 0, but the lower will resolve to $y=K$, this leaves the final value:
+#+name: eq::i2value
+\begin{equation}
+e^{-R\tau} I_2 = \frac{1}{2} \sigma^2 K^2 \phi = \frac{1}{2} \sigma^2 K^2 \frac{\partial^2 u}{\partial K^2}.
+\end{equation}
+
+Substitute equation ([[eq::i1val]]) and equation ([[eq::i2value]]) into equation ([[eq::dupireintegral]]):
+\[\frac{\partial u}{\partial \tau} = (R-D) \left(u - K \frac{\partial u}{\partial K} \right) + \frac{1}{2} \sigma^2 K^2 \frac{\partial^2 u}{\partial K^2} - Ru, \]
+\[= Ru - Du - (R-D) K \frac{\partial u}{\partial K} + \frac{1}{2} \sigma^2 K^2 \frac{\partial^2 u}{\partial K^2} - Ru, \]
+this results in the Dupire equation [cite:@dupirePricingSmile1994 p. 5]:
+#+name: eq::dupire
+\begin{equation}
+\frac{\partial u}{\partial \tau} = \frac{1}{2} \sigma^2 K^2 \frac{\partial^2 u}{\partial K^2} - (R-D) K \frac{\partial u}{\partial K} - Du.
+\end{equation}
+The converted boundary conditions from the Black-Scholes equation ([[eq::BlackScholes]]) are:
+\begin{gather}
+u (0,\tau) = xe^{-D\tau}, \quad \tau = T-t, \\
+u (K,0) = \max \{x-K, 0\}, \\
+u(K,\tau) = u(K).
+\end{gather}
+
+** Bouchouev transformation
+:LOGBOOK:
+CLOCK: [2026-06-20 Sat 21:18]--[2026-06-20 Sat 21:55] =>  0:37
+CLOCK: [2026-06-16 Tue 10:45]--[2026-06-16 Tue 10:47] =>  0:02
+:END:
+
+Bouchouev and Isakov proceed to transform this further for their approximation. Consider the Dupire equation ([[eq::dupire]]), then take the change of variables:
+\[y = \ln \left(\frac{x}{K} \right). \]
+The new partial derivatives:
+\[\frac{\partial u}{\partial K} = \frac{\partial u}{\partial y} \cdot \frac{\partial y}{\partial K} = - \frac{1}{K} \frac{\partial u}{\partial y}, \]
+\[\frac{\partial^2 u}{\partial K^2} = \frac{\partial}{\partial K} \left(\frac{\partial u}{\partial K} \right), \]
+for calculating this derivative, take:
+\[\frac{\partial}{\partial K} = \frac{\partial}{\partial y} \cdot \frac{\partial y}{\partial K}, \]
+then:
+\[\frac{\partial^2 u}{\partial K^2} = - \frac{1}{K} \frac{\partial}{\partial y} \left(- \frac{1}{K} \frac{\partial u}{\partial y} \right). \]
+$K$ is a function of $y$, but it is unchanged as an exponential function, so:
+\[\frac{\partial^2}{\partial K^2} = \frac{1}{K^2} \left(\frac{\partial^2 u}{\partial y^2} + \frac{\partial u}{\partial y} \right). \]
+Feeding this back into the Dupire Equation [[eq::dupire]]:
+#+name: eq::dupireeq
+\begin{equation}
+\frac{\partial u}{\partial \tau} = \frac{1}{2} \sigma^2 \left(\frac{\partial^2 u}{\partial y^2} + \frac{\partial u}{\partial y} \right) + (R-D )\frac{\partial u}{\partial y} - Du.
+\end{equation}
+This is slightly different to the original paper [cite:@bouchouevInverseProblemOption1997 p. L14], but equivalent to their solution in a later paper [cite:@bouchouevUniquenessStabilityNumerical1999 p. R101], where they set $\mu = R-D, \; t=0$ instead, equivalent to pricing an option at the current moment. Bouchouev and Isakov observe that this does permit an exact solution for $\sigma(K,T)$, but that this is dependent on second order differential terms for discrete distributions, making it highly numerically unstable for actual calculations. 
+
+
+** Conversion to a Cauchy problem
+:PROPERTIES:
+:CUSTOM_ID: section::lishangconvcauchy
+:END:
+
+[cite:@lishangNewWellposedAlgorithm2003 p. 453] considered a Cauchy problem conversion of the Black-Scholes model in their solution to the inverse problem. Consider the Dupire equation [[eq::dupire]], under a few constraints on the space of the strike price:
+\[u_\tau = \frac{1}{2} \sigma^2 K^2 u_{KK} - (r-D) K u_K - Du, \]
+\[u |_{K=0} = e^{-D\tau} x, \]
+\[u|_{\tau=0} = (x-K)^+, \]
+where it is also assumed that $K$ satisfies:
+\[\underset{K \rightarrow \infty}{\lim} u^* (K) = 0, \]
+where $u^*$ is the current market price of options at strike price $K^*$ and time to maturity $\tau^*$.
+
+
+Define the variables:
+#+name: eq::lishangconv
+\begin{equation}
+y = \ln \left(\frac{K}{x} \right), \; \; v(x,\tau) = \frac{1}{x} e^{-D\tau} u(x,\tau),
+\end{equation}
+with the partial derivatives:
+\[\frac{\partial u}{\partial K} = \frac{\partial u}{\partial y} \cdot \frac{\partial u}{\partial K}, \quad \frac{\partial y}{\partial K} = \frac{1}{K}, \; \; \frac{\partial u}{\partial y} = x e^{-D\tau} \frac{\partial v}{\partial y}, \]
+so,
+#+name: eq::lishanguk
+\begin{equation}
+\frac{\partial u}{\partial K} = \frac{x}{K} e^{-D\tau} \frac{\partial v}{\partial y}.
+\end{equation}
+Then:
+\[\frac{\partial^2 u}{\partial K^2} = \frac{\partial}{\partial K} \left(\frac{\partial u}{\partial K} \right), \quad \frac{\partial}{\partial K} = \frac{\partial}{\partial y} \cdot \frac{\partial y}{\partial K} = \frac{1}{K} \frac{\partial}{\partial y}, \]
+equation ([[eq::lishangconv]]) permits writing this as:
+\[\frac{\partial^2 u}{\partial K^2} = \frac{1}{K} \frac{\partial}{\partial y} \left(e^{-y-D\tau} \cdot \frac{\partial v}{\partial y} \right), \]
+#+name: eq::lishangu2k2
+\begin{equation}
+\frac{\partial^2 u}{\partial K^2} = \frac{1}{K} \left(\frac{x}{K} e^{-D \tau} v_yy - \frac{x}{K} e^{-D \tau} v_y \right).
+\end{equation}
+Finally,
+\[\frac{\partial u}{\partial \tau} = \frac{\partial}{\partial \tau} \left(x e^{-D \tau} v(y,\tau) \right),\]
+#+name: eq::lishangut
+\begin{equation}
+\frac{\partial u}{\partial \tau} = -D x e^{-D \tau} v + x e^{-D\tau} \frac{\partial v}{\partial \tau}.
+\end{equation}
+Returning ([[eq::lishanguk]]), ([[eq::lishangu2k2]]), and ([[eq::lishangut]]) back into equation ([[eq::dupire]]):
+
+\[x e^{-D\tau} \frac{\partial v}{\partial \tau} - D x e^{-D \tau} v = \frac{1}{2} \sigma^2 K^2 \frac{x}{K^2} \frac{x}{K^2} e^{-D \tau} \left(\frac{\partial^2 v}{\partial y^2} -  \frac{\partial v}{\partial y} \right) - (R-D)K \cdot \frac{x}{K} e^{-D \tau} \frac{\partial v}{\partial y} - D x e^{-D \tau} v, \]
+which simplifies to:
+\[v_\tau = \frac{1}{2}\sigma^2 K^2 \left(v_{yy} - v_y \right) - (R-D) v_y, \]
+
+this is a Cauchy problem:
+#+name: eq::lishangcauchy
+\begin{equation}
+v_\tau = a(y) \left(v_{yy} - v_y \right) - (R-D) v_y,
+\end{equation}
+with conditions:
+#+name: eq::lishangcauchycond
+\begin{equation}
+(y,\tau) \in Q = \mathbb{R} \times (0,\tau^*], \; \; v|_{\tau = 0} = (1-e^y)^+, 
+\end{equation}
+where:
+\[v(y,\tau) = \frac{1}{x} e^{D\tau} u(K,\tau) , \; \; a(y) = \frac{1}{2} \sigma^2 (K), \]
+as per their finding in [cite:@lishangNewWellposedAlgorithm2003 p. 453].
+
+
+** Solving the Cauchy problem
+:PROPERTIES:
+:CUSTOM_ID: section::solvecauchy
+:END:
+
+[cite:@lishangNewWellposedAlgorithm2003, p. 456] propose a well-posed scheme for parameter inversion. This requires solving two PDEs, a state equation ([[eq::cauchypro]]) and an adjoint equation ([[eq::cauchyadj]]),
+#+name: eq::cauchypro
+\begin{equation}
+v_\tau = a (v_{yy} - v_y) - (r-q) v_y; \; \; v|_{\tau=0}= (1-e^y)^*,
+\end{equation}
+#+name: eq::cauchyadj
+\begin{equation}
+-\phi_\tau = (a\phi)_{yy} + (a\phi)_{y} + (r-q) \phi_y; \; \; \phi|_{\tau=\tau^*} = v(y,\tau^*) - v^*(y),
+\end{equation}
+where $\phi(y,\tau)$ is the generalised solution to an optimal control problem that minimises a cost function for how well the calculated premium function $v(y,\tau^*)$ fits the empirical curve $v^*(y)$ [cite:@lishangNewWellposedAlgorithm2003 p. 456].
+
+
+To solve these PDEs, the original authors recommended using Meyer's invariant embedding method [cite:@lishangNewWellposedAlgorithm2003 p. 456]. Consider equation ([[eq::cauchypro]]), there will always be numbers $L>>1$, $M<<1$, that satisfy $v(-L) = 1$, and $v(M) = 0$. After discretising the time across /n/ steps, we solve in space. Our time becomes $v_n = v(y,n\Delta\tau), x=y+L$, and is progressively solved in /n/ steps. Equation ([[eq::cauchypro]]) has boundary conditions:
+#+name: eq::cauchyprobounds
+\begin{equation}
+v_0 (x) = (q-e^{x-L})^+, \; \; v_n (0) =1, \; \; v_n (L+M) =0.
+\end{equation}
+Consider the variable $z_n(x) = v_n'(x)$, where:
+#+name: meyerz1
+\begin{equation}
+v_n (x) = U_n (x) z_n (x) + u_n(x), \quad v_n'(x) = U_n' (x) z_n (x) + U_n z_n'(x) + u_n' (x),
+\end{equation}
+the computations are now a set of initial value problems for the PDE, rather than numerically integrating between different bounds. Substituting ([[meyerz1]]) into ([[eq::cauchypro]]):
+\[\frac{U_n(x) z_n(x)+u_n(x)-v_{n-1} (x)}{\Delta \tau} - a_n(x)(z_n'(x) - z_n(x)) + (R-D) z_n(x) = 0, \]
+which rearranges to:
+#+name: eq::meyerzprime
+\begin{equation}
+z_n(x)' = \left(\frac{U_n(x)}{a_n(x)\Delta \tau} + \frac{a_n(x)+R-D}{a_n(x)} \right) z_n(x) + \frac{u_n(x)-v_{n-1}}{a_n(x) \Delta \tau},
+\end{equation}
+from the definition of $L$ and $M$, and ([[meyerz1]]), one boundary of $z_n(x)$ must be:
+#+name: eq::meyerztermcond
+\begin{equation}
+z_n (L+M) = - \frac{u_n (L+M)}{U_n (L+M)}.
+\end{equation}
+
+Substituting ([[eq::meyerzprime]]) into ([[meyerz1]]):
+\[z_n(x) \equiv U_n'(x)z_n(x) + U_n(x) \left( \left(\frac{U_n(x)}{a_n(x) \Delta \tau} + \frac{a_n(x)+R-D}{a_n(x)} \right)z_n(x) + \frac{u_n(x)-v_{n-1} (x)}{a_n(x) \Delta\tau} \right) + u_n'(x), \]
+matching the first order term of $z_n(x)$:
+\[1 = U_n'(x) + \frac{U_n^2(x)}{a_n(x)\Delta\tau} + \frac{a_n(x)+R-D}{a_n(x)}U, \]
+#+name: eq::meyerUprime
+\begin{equation}
+U_n'(x) = 1 - \frac{U_n^2(x)}{a_n(x)\Delta\tau} - \frac{a+R-D}{a_n(x)}U_n(x),
+\end{equation}
+the boundary condition on $U_n'(x)$ is set such that the obtained function for $z_n'(x)$ cannot be an influence on $v_n(0)$:
+#+name: eq::meyerUinit
+\begin{equation}
+U_n (0) = 0,
+\end{equation}
+for the zeroth order term of $z_n(x)$:
+\[0 = \frac{u_n(x)-v_{n-1} (x)}{a_n(x)\Delta\tau}U_n(x) + u_n'(x), \]
+#+name: eq::meyervprime
+\begin{equation}
+u_n'(x) = \frac{v_{n-1}(x) -u_n(x)}{a_n(x)\Delta\tau}U_n (x).
+\end{equation}
+the boundary condition here is equivalent to $v_(0)$:
+#+name: eq::meyer1last
+\begin{equation}
+u_n'(0) = 1,
+\end{equation}
+Numerically solve the system of equations ([[meyerz1]])-([[eq::meyer1last]]) to solve the PDE.
+
+
+
+For the adjoint equation ([[eq::cauchyadj]]) there exists a similar method, but have to more directly account for $a(y)$ as a function of space. This will be discussed more clearly in Section ([[#section::impleq]]). First, it is more convenient to define a new (reversed) time variable:
+#+name: eq::adjtime
+\begin{equation}
+f (y, \tau) = \Phi(y, \tau^* - s), \quad s = \tau^* - \tau,
+\end{equation}
+\[f_s = - \Phi_\tau, \]
+Entering equation ([[eq::adjtime]]) into equation ([[eq::cauchyadj]]) results in the Cauchy problem:
+#+name: eq::adjinitcond
+\begin{equation}
+f_s = (a f)_{yy} + (a f)_y + (R-D) f_{y}, \quad f|_{\tau = 0} = v (y,\tau^*) - v^* (y),
+\end{equation}
+since time is reversed. Let there be numbers $L, M \in \mathbb{R}^*$ such that:
+\[L, M >> 1, \; \; f_n(-L) = 1, f_n (M) = 0, \]
+If the space is shifted up by the lowest bound:
+\[x = y-L, \]
+Then the Cauchy problem becomes:
+#+name: eq::cauchyadjdisc
+\begin{equation}
+\frac{f_n (x) - f_{n-1} (x)}{\Delta \tau} = (a f)'' + (a f)' + (R-D)f'.
+\end{equation}
+Define a variable $z(x)$ such that;
+#+name: eq::meyeradjzdef
+\begin{equation}
+z = (af )_y, \quad f(x) = U(x) z(x) + u(x),
+\end{equation}
+then:
+\[z = a'f + af' \]
+#+name: eq::meyeradjfprime
+\begin{equation}
+f' = \left(\frac{1 - a_n'(x) U_n(x)}{a_n (x)} \right) z_n(x) - \frac{a_n'(x) u_n(x)}{a_n(x)},
+\end{equation}
+substituting ([[eq::meyeradjzdef]]) and ([[eq::meyeradjfprime]]) into ([[eq::cauchyadjdisc]]):
+\[\frac{f_n(x) - f_{n-1}(x)}{\Delta \tau} = z_n'(x) + z_n(x) + \mu \left(\frac{1 - a_n' (x) U_n (x)}{a_n(x)} z_n(x) - \frac{a_n'(x) u_n (x)}{a_n (x)} \right) \]
+evaluating to:
+#+name: eq::meyerz2
+\begin{equation}
+z_n'(x) = \left(\frac{U_n(x)}{\Delta \tau} - 1 - \mu \frac{1 - a_n'(x) U_n(x)}{a_n(x)} \right) z_n(x) +  \frac{u_n(x) - f_{n-1} (x)}{\Delta \tau} + \frac{a_n'(x) u_n(x)}{a_n(x)} \mu.
+\end{equation}
+Combining ([[eq::meyeradjzdef]]), ([[eq::meyeradjfprime]]), and ([[eq::meyerz2]]):
+#+name: eq::meyer2zmatch
+\begin{multline}
+\left(\frac{1 - a_n'(x) U_n(x)}{a_n (x)} \right) z_n(x) - \frac{a_n'(x) u_n(x)}{a_n(x)} \equiv U_n'(x) z_n(x) + u_n'(x) \\ + U_n(x) \left(\left(\frac{U_n(x)}{\Delta \tau} - 1 - \mu \frac{1 - a_n'(x) U_n(x)}{a_n(x)} \right) z_n(x) +  \frac{u_n(x) - f_{n-1} (x)}{\Delta \tau} + \frac{a_n'(x) u_n(x)}{a_n(x)} \mu \right).
+\end{multline}
+Matching the values of $z_n(x)$ on both sides of ([[eq::meyer2zmatch]]):
+\[\frac{1 - a_n'(x) U_n(x)}{a_n(x)} = U_n'(x) + \frac{U_n^2(x)}{\Delta \tau} - U_n(x) - \mu \frac{U_n(x) - a_n'(x) U_n^2(x)}{a_n(x)}, \]
+and:
+#+name: eq::meyerU2
+\begin{equation}
+U_n'(x) = \frac{1}{a_n(x)} + \left(1 + \frac{\mu}{a_n (x)} - \frac{a_n'(x)}{a_n(x)} \right) U_n(x) - \left(\frac{\mu a_n'(x)}{a_n(x)} + \frac{1}{\Delta \tau} \right) U_n^2(x).
+\end{equation}
+Finally, if matching the remaining terms in ([[eq::meyer2zmatch]]):
+\[- \frac{a_n'(x) u_n(x)}{a_n(x)} = u_n'(x) + \frac{u_n - f_{n-1}}{\Delta \tau} U_n(x) + \frac{a_n'(x) u_n(x)}{a_n(x)} \mu U_n(x), \]
+simplifying to:
+#+name: eq::meyeru2
+\begin{equation}
+u_n'(x) = \frac{f_{n-1} (x) - u_n(x)}{\Delta \tau} U_n(x) - (\mu U_n(x) +1) \frac{a_n'(x)\mu}{a_n(x)}.
+\end{equation}
+
+The adjoint equation follows the convergence of the theoretical $v(y,\tau^*)$, and the empirical $v^*(y)$, since it is expected $v(y,\tau^*) - v^*(y) \rightarrow 0$ on both sides of the range, the initial conditions are:
+#+name: eq::initcondunU
+\begin{equation}
+U_n(0) = 0, \quad u_n(0) =0,
+\end{equation}
+by the definition of $L$ and $M$, there exist condition:
+#+name: eq::initcondz
+\begin{equation}
+z_n(L+M) = - \frac{u_n(L+M)}{U_n(L+M)},
+\end{equation}
+since the variable $f(y,s)$ functionally works backwards in time from the observed maturity $\tau^*$ (as per ([[eq::adjtime]])), the initial condition becomes:
+#+name: eq::initcondf
+\begin{equation}
+f|_{\tau = 0} = v(y,\tau^*) - v^*(y).
+\end{equation}
+The algorithm is characterised by the equations ([[eq::meyerz2]])-([[eq::meyeru2]]), with initial conditions ([[eq::initcondunU]])-([[eq::initcondf]]).
+
+
+
+*** Numerical method
+:PROPERTIES:
+:CUSTOM_ID: section::impleq
+:END:
+
+It is worth noting that because the algorithm has discretised in time while solving in space, the equations are "stiff", meaning that extremely high steps in /x/ are required for an explicit Euler scheme to not "blow up". Instead, use the implicit Euler method, where the right bound of the derivative is used to calculate the next value. For example, for the numerical derivative of a function $y(x)$ with respect to /x/:
+\[y_{i+1} (x) = y_i (x) + \Delta x \cdot y_{i+1}' (x), \; \; y_i (x) = y_{i+1} (x) - \Delta x \cdot  y_i '(x), \]
+Firstly, the initial conditions are set for $v_n(0)$, $U_n(0)$, and $z_n(0)$, relationships between values permit numerical integration going up the chain. The second loop sets the terminal condition at $z_n(L+M)$, and then fills previous values of $z_n(x)$. After both loops, $v_n(x)$ must be continuously updated, and the entire process can be repeated for each time-step until reaching $\tau^*$. Implicit equations for numerical integration can be derived from equation ([[eq::cauchypro]]). Firstly, $U_n(0)$ and $u_n(0)$ can be initialised according to ([[eq::meyerUinit]]) and ([[eq::meyer1last]]). For $U_n(x)$, consider the substitutions:
+#+name: eq::impsubs
+\begin{equation}
+\alpha_{n,i+1} = \frac{1}{a_{n,i+1} \Delta \tau}, \quad \beta_{n,i+1} = \frac{a_{n,i+1} + R - D}{a_{n,i+1}},
+\end{equation}
+where $n,i$ corresponds to the position in the time and space chain of the variable respectively, into ([[eq::meyerUprime]]):
+\[U_{n, i+1}  = U_{n,i}  + \Delta x (1 - \beta_{n,i+1} U_{n, i+1} - \alpha_{n,i+1} U^2_{n, i+1}), \]
+\[\Delta x \cdot \alpha_{n,i+1} \cdot U_{n, i+1}^2  + (1 + \beta_{n,i+1} \Delta x) U_{n, i+1}  + (- U_{n,i}  - \Delta x) = 0, \]
+make the substitutions:
+\[A = \Delta x \cdot \alpha_{n,i+1}, \; \; B = 1 + \Delta x \cdot \beta_{n,i+1}, \; \; C = -U_{n,i}  - \Delta x, \]
+then the relationship is:
+#+name: eq::implU
+\begin{equation}
+U_{n,i+1}  = \frac{-B + \sqrt{B^2 - 4 A C}}{2 A}, \quad U_n(0) = 0,
+\end{equation}
+since $U_n(x) \geq 0, \; a > 0, \; x \geq 0$, which is implied by the quadratic form of $U_{n,i+1}(x)$ and the function starting at 0.
+
+For $u_n(x)$, if substitute ([[eq::impsubs]]) into ([[eq::meyervprime]]):
+\[u_{n, i+1}  = u_{n,i}  + \Delta x (\alpha_{n,i+1} U_{n,i+1}  (v_{n-1,i+1}  - u_{n,i+1} )), \]
+yielding:
+#+name: eq::implu1
+\begin{equation}
+u_{n, i+1}  = \frac{u_{n,i}  + \Delta x \cdot \alpha_{n,i+1} U_{n,i+1}  v_{n-1,i+1} }{1 + \Delta x \cdot \alpha_{n,i+1} U_{n,i+1} }, \quad u_n(0) = 1.
+\end{equation}
+
+On the second loop, first set the terminal condition of $z_n(x)$ using ([[eq::meyerztermcond]]):
+\[z_n(L+M) = - \frac{u_n(L+M)}{U_n(L+M)}, \]
+they can then be back-filled down the chain. Using the substitutions:
+#+name: eq::implzsubs1
+\begin{gather}
+\lambda_{n,i} = \frac{U_{n,i}}{a_{n,i} \Delta \tau} + \frac{a_{n,i} + R - D}{a_{n,i}},\\
+\gamma_{n,i} = \frac{u_{n,i} - v_{n-1,i}}{a_{n,i} \Delta \tau},
+\end{gather}
+into ([[eq::meyerzprime]]):
+\[z_{n,i} (x) = z_{n,i+1} - \Delta x (\lambda_{n,i} z_{n,i} + \gamma_{n,i}), \]
+which shows the relation:
+#+name: eq::implz1
+\begin{equation}
+z_{n,i} = \frac{z_{n,i+1} - \Delta x \cdot \gamma_{n,i}}{1 + \Delta x \cdot \lambda_{n,i}},
+\end{equation}
+follow this relation back down from $L+M$ to 0, and recover $v(x,\tau^*)$ using ([[meyerz1]]).
+
+
+
+
+
+The adjoint equation can be solved similarly. $a_n'(x)$ can be calculated by taking differences across values (including the central difference at both ends), which is already implemented with =numpy.gradient.= The first loop goes forwards and fills $U(x)$ and $u(x)$. For $U'(x)$:
+#+name: eq::implalpha2
+\begin{equation}
+\alpha_{n,i+1}  = \frac{\mu a_{n,i+1}' }{a_{n,i+1} } + \frac{1}{\Delta \tau}, \; \; \beta_{n,i+1}  = 1 + \frac{\mu}{\alpha_{n,i+1} } - \frac{a_{n,i+1}' }{a_{n,i+1} },
+\end{equation}
+and substitute ([[eq::implalpha2]]) into ([[eq::meyerU2]]), then:
+\[U_{n,i+1} = U_{n,i}  + \Delta x \cdot \left(\frac{1}{a_{n,i+1} } + \beta_{n,i+1}  U_{n,i+1}  - a_{n,i+1}  U^2_{n,i+1}  \right), \]
+#+name: eq::quadUmeyer2
+\begin{equation}
+\Delta x \cdot \alpha_{n,i+1} U^2_{n,i+1} + \left(1 - \Delta x \cdot \beta_{n,i+1} \right) U_{n,i+1} - \left(U_{n,i} + \Delta x \cdot \frac{1}{a_{n,i+1}} \right) = 0,
+\end{equation}
+take the substitutions:
+#+name: eq::quadmeyer2constsubs
+\begin{equation}
+A = \Delta x \cdot \alpha_{n,i+1} , \; \; B = 1 - \Delta x \cdot \beta_{n,i+1} , \; \; C = -U_{n,i}  - \Delta x \cdot \frac{1}{a_{n,i+1}} ,
+\end{equation}
+and enter ([[eq::quadmeyer2constsubs]]) into ([[eq::quadUmeyer2]]):
+#+name: eq::implU2
+\begin{equation}
+U_{n,i+1} = \frac{-B + \sqrt{B^2 - 4 AC}}{2A}, \quad U_n (0) = 0.
+\end{equation}
+Within the same loop, observe from ([[eq::meyeru2]]) and ([[eq::implalpha2]]) that:
+#+name: eq::starteruimp
+\begin{equation}
+u_{n,i}' = \frac{f_{n-1,i} }{\Delta \tau} U_{n,i} - \left(\alpha_{n,i} U_{n,i} + \frac{a_{n,i}'}{a_{n,i}} \right) u_{n,i}.
+\end{equation}
+Under the substitutions:
+#+name: eq::implusubs
+\begin{equation}
+c_{n,i+1}  = U_{n,i+1}  \alpha_{n,i+1}  + \frac{a_{n,i+1}'}{a_{n,i+1} }, \; \; d_{n,i+1}  = \frac{f_{n-1,i+1} }{\Delta \tau} U_{n,i+1}, 
+\end{equation}
+equation ([[eq::implusubs]]) and ([[eq::starteruimp]]) combine to show:
+\[u_{n,i+1} = u_{n,i}  + \Delta x \left(d_{n,i+1}  - c_{n,i+1}  u_{n,i+1}  \right), \]
+and the relation:
+#+name: eq::implu2
+\begin{equation}
+u_{n,i+1}  = \frac{u_{n,i}  + \Delta x \cdot d_{n,i+1} }{1 + \Delta x \cdot c_{n,i+1} }, \quad u_n (0 ) = 0.
+\end{equation}
+The initial conditions in ([[eq::initcondunU]]), enable the initialisation, and the ability to fill $u_n(x)$ and $U_n(x)$ on the forward loop using ([[eq::implU2]]) and ([[eq::implu2]]).
+
+The second loop runs backwards from the terminal condition at ([[eq::initcondz]]), and fills up $z_n(x)$. Define the constants:
+#+name: eq::implsubsz2
+\begin{gather}
+\lambda_{n,i} = \frac{U_{n,i}}{\Delta \tau} - 1 - \mu \frac{1 - a_{n,i}' U_{n,i}}{a_{n,i}},\\
+\gamma_{n,i} = \frac{u_{n,i} - f_{n-1,i}}{\Delta \tau} + \frac{a_{n,i}' u_{n,i}}{a_{n,i}} \mu,
+\end{gather}
+then substitute ([[eq::implsubsz2]]) into ([[eq::meyerz2]]):
+\[z_{n,i} = z_{n,i+1} - \Delta x \left(\lambda_{n,i} z_{n,i} + \gamma_{n,i} \right), \]
+for the relation:
+#+name: eq::implz2
+\begin{equation}
+z_{n,i} = \frac{z_{n,i+1} - \Delta x \cdot \gamma_{n,i}}{1 + \Delta x \cdot \lambda_{n,i}}, \quad z_n (L+M) = - \frac{u_n(L+M)}{U_n(L+M)}.
+\end{equation}
+The relationship ([[eq::implz2]]) and ([[eq::initcondz]]) allow the back-filling $z_n(x)$ at each value of $\tau$ from $0 \rightarrow \tau^*$. The final step is to flip the array to account for the reversed time variable $f(y,s)$.
+
+
+
+The optimal control algorithm is well explained within section (A.2) of the original paper [cite:@lishangNewWellposedAlgorithm2003 p. 456]. Firstly, numerically integrate the function:
+\[f(y;v,\phi) = \frac{1}{N} \int^{\tau^*}{0} \phi [v_\tau + (R-D) v_y] / a d\tau, \]
+where $N$ is a regularisation constant $(N=1)$ is an acceptable choice. This can be accomplished with a function like =np.trapezoid=, Then, calculate a variable:
+\[B^n_i = \alpha a^n_{i+1} + (1-2\alpha)a^n_i + \alpha a^n_{i-1} - f_i \Delta_t, \quad \alpha = \Delta t / (\Delta y)^2, \]
+where $\Delta t$ is an induced "false" time step, with the only key requirement being that $\alpha < 0.5$ for numerical stability. The final step is to define a new $a(y)$ chain under the conditions:
+\[a^{n+1}_i = \begin{cases} B^n_i, & a_0 < a^n_i < a_1; \\ a_0, & a^n_i = a_0 \text{ and } B^n_i < a_0; \\ a_1, & a^n_i = a_1 \text{ and } B^n_i > a_1, \end{cases} \]
+where the estimated volatility function can only take values between $(a_0, a_1), \; 0<a_0<a_1$. This can be efficiently conducted with =np.clip=, which chooses a value within the bounds of its entry, or the boundary that is broken. This process can be iterated until the distance between the new and old estimates is lower than a certain tolerance limit, or until reaching a declared iteration cap.
+
+
+
+
+In this report, the Euclidean distance was given a convergence limit of $\eta = 10^{-4}$, but because $\Delta t << \eta$, any time-step would produce a change too small to exceed \eta, and the function would spuriously converge on the first iteration. To combat this, the Euclidean distance can be rescaled by dividing it by $\Delta t$ before comparing to \eta.
+
+
+
+After producing a new value of $a(y)$, the entire process can be restarted until either an outer convergence limit or outer iteration limit is met. The volatility can then be reclaimed by the relation $\sigma(K) = \sqrt{2 a(y)}$.
+
+
+
+* Numerical simulations
+
+** Direct problem
+:PROPERTIES:
+:ID:       9549E7BE-D354-464C-A504-B20200E2B580
+:END:
+:LOGBOOK:
+CLOCK: [2026-07-09 Thu 14:47]--[2026-07-09 Thu 14:55] =>  0:08
+CLOCK: [2026-07-09 Thu 10:57]--[2026-07-09 Thu 13:46] =>  2:49
+CLOCK: [2026-06-21 Sun 04:43]--[2026-06-21 Sun 04:44] =>  0:01
+CLOCK: [2026-06-20 Sat 22:00]--[2026-06-21 Sun 04:32] =>  6:32
+:END:
+
+The stability and behaviour of the direct Black-Scholes problem informs the variance induced by the known inputs. Listing ([[babel::BlackScholesSim]]) contains an example of a function that generates a wide range of option premiums by varying only /x/.
+
+#+name: babel::BlackScholesSim
+#+caption: Program for evaluating change in Black-Scholes call price premium as $x$ increases.
+#+begin_src python :eval never-export :exports code
+  path = np.linspace(x_min, x_max, steps)
+
+  d1 = (np.log(path/K) + (R - D + 0.5 * (sigma**2)) * tau) /
+  (sigma * np.sqrt(tau))
+  d2 = (np.log(path/K) + (R - D - 0.5 * (sigma**2)) * tau) /
+  (sigma * np.sqrt(tau))
+
+  u = (path * np.exp(-D * tau) * norm.cdf(d1) -
+       K * np.exp(-R * tau) * norm.cdf(d2))
+#+end_src
+
+Limiting the change to only one variable opens a view into how the variable impacts the final solution. For /x/, this produces Figure ([[fig::bschangex]]). As expected, /x/ eventually converges on the upper Black-Scholes boundary condition ([[eq:: BlackScholesd2]]) as /x/ grows in magnitude. The time till maturity is another facet of the direct problem. Observing Figure ([[fig::bschanget]]), the call option premium increases at a decreasing rate as \tau increases. The graph starts at the origin because it would be an arbitrage for an option to sell with a non-zero premium at the time of execution. 
+
+#+name: alg::variableinit
+#+begin_src python :session MyPy :exports none
+  import matplotlib.pyplot as plt
+  import numpy as np
+  from scipy.stats import norm
+  from matplotlib.colors import LightSource
+  from matplotlib import cm
+  from scipy.optimize import least_squares  
+
+  # variable selection from Bouchouev
+  x = 710.82
+  tau = 43/252
+  R = 0.05
+  D = 0.02
+
+
+  # variable selection from me
+  sigma = 0.25
+  K = 730
+  steps = 10000
+  my_seed = 1234
+#+end_src
+
+
+#+name: alg::bschangex
+#+begin_src python :session MyPy :results graphics file output :file images/bschangex.svg :exports none
+
+  # as x increases
+  path = np.linspace(1e-14, x+300, steps)
+  u = np.zeros((3,steps), dtype=np.float64)
+  set_K = [670, 700, 730]
+  set_asymptote = np.zeros((3,steps), dtype=np.float64)
+
+  for i in range(0,3):
+
+      d1 = (np.log(path/set_K[i]) + (R - D + 0.5 * (sigma**2)) * tau) / (sigma * np.sqrt(tau))
+      d2 = (np.log(path/set_K[i]) + (R - D - 0.5 * (sigma**2)) * tau) / (sigma * np.sqrt(tau))
+
+      u[i,:] = (path * np.exp(-D * tau) * norm.cdf(d1) - set_K[i] * np.exp(-R * tau) * norm.cdf(d2))
+
+      set_asymptote[i,:] = (path * np.exp(-D * tau) - set_K[i] * np.exp(-R*tau))
+
+  fig = plt.figure()
+  ax = fig.add_subplot(1, 1, 1)
+
+  major_yticks = [0,100,200,300]
+  major_xticks = np.arange(500,1100,100)
+
+  ax.set_xticks(major_xticks)
+  ax.set_yticks(major_yticks)
+
+  plt.plot(path,u[0,:],label=r"Black-Scholes Price, $\; K = 670$", ls = '-')
+  plt.plot(path,set_asymptote[0,:],label=r"$x e^{-D \tau} - K e^{-R \tau}, \; K = 670$", ls = '--')
+
+  plt.plot(path,u[1,:],label=r"Black-Scholes Price, $\; K = 700$", ls = '-.')
+  plt.plot(path,set_asymptote[1,:],label=r"$x e^{-D \tau} - K e^{-R \tau}, \; K = 700$", ls = ':')
+
+  plt.plot(path,u[2,:],label=r"Black-Scholes Price, $\; K = 730$", ls = (0, (3, 10, 1, 10, 1, 10)))
+  plt.plot(path,set_asymptote[2,:],label=r"$x e^{-D \tau} - K e^{-R \tau}, \; K = 730$", ls = (0, (3, 1, 1, 1)))
+  plt.title("Value of option premium across initial stock price")
+  plt.xlabel(r"Stock Price $x$")
+  plt.ylabel(r"Option Premium $u(x,0)$")
+
+  plt.ylim(0,300)
+  plt.legend(loc='upper left')
+  plt.xlim(550,1000)
+  plt
+#+end_src
+
+
+#+RESULTS: alg::bschangex
+#+name: fig::bschangex
+#+caption: Black-Scholes Price across option price values $(x)$. The chosen trading period $(T-t) = 43/252$, The interest rate as 5%, and the dividend was 2% of the stock, $\sigma = 0.25$, as per [cite:@bouchouevInverseProblemOption1997 p. L16]. Three strike prices are used $K \in (670, 700, 730)$.
+[[file:images/bschangex.svg]]
+
+
+#+name: alg::bschanget
+#+begin_src python :session MyPy :results graphics file output :file images/bschanget.svg :exports none
+    set_sigma = [0.1, 0.25, 0.5]
+    path = np.linspace(1e-14, 2, 252*2)     # trading days in a year
+
+    u = np.zeros((3, 252*2), dtype=np.float64)
+
+    for i in range (0,3):
+
+        d1 = (np.log(x/K) + (R - D + 0.5 * (set_sigma[i]**2)) * path) / (set_sigma[i] * np.sqrt(path))
+        d2 = (np.log(x/K) + (R - D - 0.5 * (set_sigma[i]**2)) * path) / (set_sigma[i] * np.sqrt(path))
+
+        u[i,:] = (x * np.exp(-D * path) * norm.cdf(d1) - K * np.exp(-R * path) * norm.cdf(d2))
+
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+
+    major_yticks = np.arange(0,250,50)
+    major_xticks = np.arange(0,2.5,0.5)
+
+    ax.set_xticks(major_xticks)
+    ax.set_yticks(major_yticks)
+
+    ax.set_ylim(-0.1,202)
+    ax.set_xlim(-0.001, 2.02)
+    
+    plt.plot(path,u[2,:], label=r"$\sigma$ = 0.5", ls = '-')
+    plt.plot(path,u[1,:], label=r"$\sigma$ = 0.25", ls = '-.')
+    plt.plot(path,u[0,:], label=r"$\sigma$ = 0.1", ls = ':')
+    plt.title("Value of option premium as time till maturity changes")
+    plt.xlabel(r"Time till maturity $T-t$")
+    plt.ylabel("Option Premium $u(x,0)$")
+    plt.legend(loc="upper left")
+    plt
+#+end_src
+
+
+#+name: fig::bschanget
+#+caption: Black-Scholes price across time to maturity $\tau = T-t$. The maximum time range is up to 2 years, the option price is $x = 710.82$, the interest rate is 5%, the dividend is 2%, as per [cite:@bouchouevInverseProblemOption1997 p. L16]. The strike price is 730. Three values for the volatility were used, $\sigma \in \{0.1,0.25,.0.5\}$.
+[[file:images/bschanget.svg]]
+
+
+
+It is also possible to observe how two varied factors can impact each other. In Figure ([[fig::bschangexK]]), the effect of /K/ across each value of /x/ seems largely linear, with a floor where $x < K$.
+
+#+name: alg::bschangexK
+#+begin_src python :session MyPy :results graphics file output :file images/bschangexK.svg :exports none
+  x_steps = 1000
+  K_steps = 500
+
+  x_path = np.linspace(500, x+300, x_steps)
+  K_path = np.linspace(x-100, x+100, K_steps)
+
+  X_mesh, K_mesh = np.meshgrid(x_path, K_path, indexing="ij")
+
+  d1 = (np.log(X_mesh/K_mesh) + (R - D + 0.5 * (sigma**2)) * tau) / (sigma * np.sqrt(tau))
+  d2 = (np.log(X_mesh/K_mesh) + (R - D - 0.5 * (sigma**2)) * tau) / (sigma * np.sqrt(tau))
+
+  prices = (X_mesh * np.exp(-D * tau) * norm.cdf(d1) - K_mesh * np.exp(-R * tau) * norm.cdf(d2))
+
+  fig = plt.figure(figsize=(6,6), constrained_layout=True)
+  ax = fig.add_subplot(111, projection='3d')
+  # surf = ax.plot_surface(K_mesh, X_mesh, prices, cmap = "viridis")
+  ax.plot_wireframe(K_mesh, X_mesh, prices, rstride=50, cstride=50) # not bad but doesn't communicate altitude 
+  ax.set_xlabel(r"Strike Price $K$")
+  ax.set_ylabel(r"Option Price $x$")
+  ax.set_zlabel(r"Call Option Premium $u(x,0)$")
+
+  x_ticker = np.arange(500,900,100)
+  y_ticker = np.arange(250,1250,250)
+  z_ticker = np.arange(-100,500,100)
+
+  ax.set_xticks(x_ticker)
+  ax.set_xlim(600,825)
+
+  ax.set_yticks(y_ticker)
+  ax.set_ylim(490,1000)
+
+  ax.set_zticks(z_ticker)
+  ax.set_zlim(0,450)
+
+  plt.title("Premium across strike and option prices")
+  plt
+#+end_src
+
+#+RESULTS: alg::bschangexK
+[[file:images/bschangexK.svg]]
+
+
+#+name: fig::bschangexK
+#+caption: Black-Scholes price across $x$ and $K$. The duration of the option was set to $43/252$, the interest rate was 5%, the dividend was 2%, and the volatility is 25%, as per [cite:@bouchouevInverseProblemOption1997 p. L16].
+[[file:images/bschangexK.svg]]
+
+
+** Inverse problem
+:LOGBOOK:
+CLOCK: [2026-07-09 Thu 13:46]--[2026-07-09 Thu 14:12] =>  0:26
+:END:
+
+Figure ([[fig::bschangesigma]]) shows that the increase in the option premium with volatility is roughly linear, starting at the origin. In Figure ([[fig::bschangeRD]]), we can see that the risk-free rate increases non-linearly with the option premium, and that the dividend percentage decreases non-linearly with the option premium. The decline as the option premium rises appears to be higher than the increase from similar percentages of the risk-free rate. Figure  ([[fig::bschangeRsigma]]) shows that variations in the risk-free rate are roughly linear across the same values of volatility, but that there is a hard floor around $R \approx 0.2, \; \sigma = 0.1$, where the option premium drops to zero. It is also clear that there are deformations in the linearity of the increasing relationship between the interest rate and premium around this floor. Figure ([[fig::bschangeDsigma]]) shows a somewhat similar relationship between the dividend rate and volatility, where impacts of the dividend rate across the same level of volatility decrease the premium roughly linearly. There is a much more apparent floor that emerges in a triangular pattern, as the dividend rate rises, the volatility needs to be higher for the option premium to be greater than 0.
+
+
+The most volatile relationship seems to exist between the risk-free rate and the volatility. Any approach to inversion would have to account for the lack of linearity in the impact of the interest rate when $0.1<\sigma<0.25$, which could otherwise pollute what would be a simple theoretically near independent relationship. This could be compounded by the risk-free rate not having a random relationship with volatility. High stock market volatility could prompt a central bank to raise interest rates, confusing the relationship further.
+
+#+name: alg::bschangesigma
+#+begin_src python :session MyPy :results graphics file output :file images/bschangesigma.svg :exports none
+  path = np.linspace(1e-14, 1, 100)     
+
+  d1 = (np.log(x/K) + (R - D + 0.5 * (path**2)) * tau) / (path * np.sqrt(tau))
+  d2 = (np.log(x/K) + (R - D - 0.5 * (path**2)) * tau) / (path * np.sqrt(tau))
+
+  u = (x * np.exp(-D * tau) * norm.cdf(d1) - K * np.exp(-R * tau) * norm.cdf(d2))
+
+  fig = plt.figure()
+  ax = fig.add_subplot(1,1,1)
+  
+  plt.plot(path,u)
+  plt.title("Value of the option premium as volatility increases")
+  plt.xlabel("Volatility (σ)")
+  plt.ylabel("Option Premium u(x,0)")
+  plt
+#+end_src
+
+
+#+name: fig::bschangesigma
+#+caption: Black-Scholes price across values of \sigma. The duration of the option was set to $43/252$, the option price is $x = 710.82$, the strike price is $K=730$, the interest rate is 5%, and the dividend is 2%, as per [cite:@bouchouevInverseProblemOption1997 p. L16].
+[[file:images/bschangesigma.svg]]
+
+
+#+name: alg::bschangeR
+#+begin_src python :session MyPy :results graphics file output :file images/bschangeR.svg :exports none
+  path = np.linspace(1e-14, 1, 100)     
+
+  d1 = (np.log(x/K) + (path - D + 0.5 * (sigma**2)) * tau) / (sigma * np.sqrt(tau))
+  d2 = (np.log(x/K) + (path - D - 0.5 * (sigma**2)) * tau) / (sigma * np.sqrt(tau))
+
+  u = (x * np.exp(-D * tau) * norm.cdf(d1) - K * np.exp(-path * tau) * norm.cdf(d2))
+
+  fig = plt.figure()
+  ax = fig.add_subplot(1,1,1)
+
+  major_yticks = np.arange(-20,120,20)
+  ax.set_yticks(major_yticks)
+  ax.set_ylim(18,102)
+
+  plt.plot(path,u)
+  plt.title("Value of the option premium across Interest Rate")
+  plt.xlabel("Interest Rate (R)")
+  plt.ylabel("Option Premium u(x,0)")
+  plt
+#+end_src
+
+#+name: alg::bschangeD
+#+begin_src python :session MyPy :results graphics file output :file images/bschangeD.svg :exports none
+  path = np.linspace(1e-14, 1, 100)     
+
+  d1 = (np.log(x/K) + (R - path + 0.5 * (sigma**2)) * tau) / (sigma * np.sqrt(tau))
+  d2 = (np.log(x/K) + (R - path - 0.5 * (sigma**2)) * tau) / (sigma * np.sqrt(tau))
+
+  u = (x * np.exp(-path * tau) * norm.cdf(d1) - K * np.exp(-R * tau) * norm.cdf(d2))
+
+  plt.plot(path,u)
+  plt.title("Value of the option premium as dividends increase")
+  plt.xlabel("Dividends (D)")
+  plt.ylabel("Option Premium u(x,0)")
+  plt
+#+end_src
+
+#+name: alg::bschangeRD
+#+begin_src python :session MyPy :results graphics file output :file images/bschangeRD.svg :exports none 
+  R_steps = 100
+  D_steps = 100
+
+  R_path = np.linspace(0, 1, R_steps)
+  D_path = np.linspace(0, 1, D_steps)
+
+  R_mesh, D_mesh = np.meshgrid(R_path, D_path, indexing="ij")
+
+  d1 = (np.log(x/K) + (R_mesh - D_mesh + 0.5 * (sigma**2)) * tau) / (sigma * np.sqrt(tau))
+  d2 = (np.log(x/K) + (R_mesh - D_mesh - 0.5 * (sigma**2)) * tau) / (sigma * np.sqrt(tau))
+
+  prices = (x * np.exp(-D_mesh * tau) * norm.cdf(d1) - K * np.exp(-R_mesh * tau) * norm.cdf(d2))
+
+  fig = plt.figure(figsize=(6,6), constrained_layout=True)
+  ax = fig.add_subplot(111, projection='3d')
+  ax.plot_wireframe(R_mesh, D_mesh, prices, rstride=10, cstride=10) # not bad but doesn't communicate altitude 
+  ax.set_xlabel(r"Risk-Free Rate $R$")
+  ax.set_xlim(1,0)
+  ax.set_ylabel(r"Dividend Percentage $D$")
+  ax.set_ylim(1,0)
+  ax.set_zlabel(r"Call Option Premium $u(x,0)$")
+  plt.title("Premium across RFR and Dividend")
+
+  x_ticker = np.arange(-0.25,1.25,0.25)
+  y_ticker = np.arange(-0.25,1.25,0.25)
+  z_ticker = np.arange(-25,125,25)
+
+  ax.set_xticks(x_ticker)
+  ax.set_xlim(1.05,-0.05)
+
+  ax.set_yticks(y_ticker)
+  ax.set_ylim(1.05,-0.05)
+
+  ax.set_zticks(z_ticker)
+  ax.set_zlim(0,100)
+
+  plt
+#+end_src
+
+#+RESULTS: alg::bschangeRD
+[[file:images/bschangeRD.svg]]
+
+
+#+name: fig::bschangeRD
+#+caption: Black-Scholes price across $R$ and $D$. The duration of the option was set to $43/252$, the option price is $x = 710.82$, the strike price is $K=730$, and the volatility is 25%, as per [cite:@bouchouevInverseProblemOption1997 p. L16].
+[[file:images/bschangeRD.svg]]
+
+
+#+name: alg::bschangeRsigma
+#+begin_src python :session MyPy :results graphics file output :file images/bschangeRsigma.svg :exports none
+  R_steps = 100
+  sigma_steps = 100
+
+  R_path = np.linspace(0, 1, R_steps)
+  sigma_path = np.linspace(0, 1, sigma_steps)
+
+  R_mesh, sigma_mesh = np.meshgrid(R_path, sigma_path, indexing="ij")
+
+  d1 = (np.log(x/K) + (R_mesh - D + 0.5 * (sigma_path**2)) * tau) / (sigma_path * np.sqrt(tau))
+  d2 = (np.log(x/K) + (R_mesh - D - 0.5 * (sigma_path**2)) * tau) / (sigma_path * np.sqrt(tau))
+
+  prices = (x * np.exp(-D * tau) * norm.cdf(d1) - K * np.exp(-R_mesh * tau) * norm.cdf(d2))
+
+  fig = plt.figure(figsize=(6,6), constrained_layout=True)
+  ax = fig.add_subplot(111, projection='3d')
+  ax.plot_wireframe(R_mesh, sigma_mesh, prices, rstride=10, cstride=10) 
+  ax.set_xlabel(r"Risk-Free Rate $R$")
+  ax.set_xlim(1,0)
+  ax.set_ylabel(r"Volatility $\sigma$")
+  # ax.set_ylim(1,0)
+  ax.set_zlabel(r"Call Option Premium $u(x,0)$")
+  plt.title("Premium across RFR and volatility")
+
+  x_ticker = np.arange(-0.25,1.25,0.25)
+  y_ticker = np.arange(-0.25,1.25,0.25)
+  z_ticker = np.arange(-50,200,50)
+
+  ax.set_xticks(x_ticker)
+  ax.set_xlim(1,-0.05)
+
+  ax.set_yticks(y_ticker)
+  ax.set_ylim(-0.05,1)
+
+  ax.set_zticks(z_ticker)
+  ax.set_zlim(0,160)
+
+  plt
+#+end_src
+
+#+name: fig::bschangeRsigma
+#+caption: Black-Scholes price across interest rates, $R$, and volatility, \sigma. The duration of the option was set to $43/252$, the option price is $x = 710.82$, the strike price is $K=730$, and the dividend is set at 2%, as per [cite:@bouchouevInverseProblemOption1997 p. L16].
+[[file:images/bschangeRsigma.svg]]
+
+
+#+name: alg::bschangeDsigma
+#+begin_src python :session MyPy :results graphics file output :file images/bschangeDsigma.svg :exports none
+  D_steps = 100
+  sigma_steps = 100
+
+  D_path = np.linspace(0, 1, D_steps)
+  sigma_path = np.linspace(0, 1, sigma_steps)
+
+  D_mesh, sigma_mesh = np.meshgrid(D_path, sigma_path, indexing="ij")
+
+  d1 = (np.log(x/K) + (R - D_mesh + 0.5 * (sigma_path**2)) * tau) / (sigma_path * np.sqrt(tau))
+  d2 = (np.log(x/K) + (R - D_mesh - 0.5 * (sigma_path**2)) * tau) / (sigma_path * np.sqrt(tau))
+
+  prices = (x * np.exp(-D_mesh * tau) * norm.cdf(d1) - K * np.exp(-R * tau) * norm.cdf(d2))
+
+  fig = plt.figure(figsize=(6,6), constrained_layout=True)
+  ax = fig.add_subplot(111, projection='3d')
+  ax.plot_wireframe(D_mesh, sigma_mesh, prices, rstride=10, cstride=10) 
+  ax.set_xlabel(r"Dividend percentage $D$")
+
+  ax.set_ylabel(r"Volatility $\sigma$")
+  # ax.set_ylim(1,0)
+  ax.set_zlabel(r"Call Option Premium $u(x,0)$")
+  plt.title("Premium across dividend and volatility")
+
+  x_ticker = np.arange(-0.25,1.25,0.25)
+  y_ticker = np.arange(-0.25,1.25,0.25)
+  z_ticker = np.arange(-50,200,50)
+
+  ax.set_xticks(x_ticker)
+  ax.set_xlim(1,-0.05)
+
+  ax.set_yticks(y_ticker)
+  ax.set_ylim(-0.05,1)
+
+  ax.set_zticks(z_ticker)
+  ax.set_zlim(0,160)
+  plt
+#+end_src
+
+#+name: fig::bschangeDsigma
+#+caption: Black-Scholes price across dividends, $D$, and volatility, \sigma. The duration of the option was set to $43/252$, the option price is $x = 710.82$, the strike price is $K=730$, and the interest rate is set at 5%, as per [cite:@bouchouevInverseProblemOption1997 p. L16].
+[[file:images/bschangeDsigma.svg]]
+
+
+
+
+* Inverting simulated data
+
+** Graphical solution
+
+For a naïve method, the inverse problem can be treated as a simultaneous equations problem. Since there are three missing parameters, three observed premium values can directly solve for /R/, /D/, and \sigma.
+
+*** Undisturbed premiums data
+
+It is easy to simulate premiums data, examine it across a range of missing fields, and recover missing variables using points on the graph. SciPy supplies =least_squares=, which defaults to a trust region reflective algorithm that solves a bounded optimisation problem as a series of sub-problems guided by the gradient. Tight bounds can massively improve numerical stability. The lowest value of the SONIA daily overnight average rate was 0.04% on 31/12/2020, and the highest was 8.61% on 30/03/1998 [cite:@bankofenglandDailySterlingOvernight2026]. As such, there is boundary range on our inversion for the risk-free rate as $R \in [0, 0.09)$. The stock with a long term dividend policy with the highest forward annual dividend rate currently is Investicorp Credit Management BDC, with a dividend rate of 56.53% [cite:@yahoofinanceHighestDividendStocks2026]. This gives a dividend solution space of $D \in (0, 0.5653)$. The range for volatility in the literature is wide, with values as high as $\sigma = 1.4$ [cite:@gatheralArbitragefreeSVIVolatility2024 p. 20]. There is no mathematical upper bound on what \sigma could be, but the range $\sigma \in (0, 1.4)$ will suffice.
+
+#+name: calculationUtilities
+#+begin_src python :session MyPy :results output :exports none
+  # calculated premiums
+
+  def d1_calc (x, K, tau, sigma, R, D):
+      """Calculation utility for d1"""
+      return ((np.log(x/K) + (R - D + 0.5 * (sigma**2)) * tau) / (sigma * np.sqrt(tau)))
+
+  def d2_calc (x, K, tau, sigma, R, D):
+      """Calculation utility for d2"""
+      return ((np.log(x/K) + (R - D - 0.5 * (sigma**2)) * tau) / (sigma * np.sqrt(tau)))
+
+  def premium_calc (x_v, tau_v, K_v, sigma_v, R_v, D_v):
+      """Calculation utility for the call option premium"""
+
+      d1_v = (np.log(x_v / K_v) + (R_v - D_v + 0.5 * (sigma_v**2)) * tau_v) / (sigma_v * np.sqrt(tau_v))
+      d2_v = (np.log(x_v / K_v) + (R_v - D_v - 0.5 * (sigma_v**2)) * tau_v) / (sigma_v * np.sqrt(tau_v))
+
+      return (x_v * np.exp(-D_v * tau_v) * norm.cdf(d1_v) - K_v * np.exp(-R_v * tau_v) * norm.cdf(d2_v)) 
+#+end_src
+
+#+name: alg::varyingx
+#+begin_src python :eval never-export :exports none
+  def price_calc_x(arr):
+      """Provides series of 3 equations when x varies"""
+
+      sigma_v, R_v, D_v = arr
+
+
+      p1 = (test_x[0] * np.exp(-D_v * tau_v) *
+            norm.cdf(d1_calc(test_x[0], K_v, tau_v, sigma_v, R_v, D_v))
+            - K_v * np.exp(-R_v * tau_v) *
+            norm.cdf(d2_calc(test_x[0], K_v, tau_v, sigma_v, R_v, D_v))
+            ) - test_x_miss_prem[0]
+
+      p2 = (test_x[1] * ...
+
+      p3 = (test_x[2] * ...
+
+      return [p1, p2, p3]
+#+end_src
+
+
+#+name: price_calc_x
+#+begin_src python :session MyPy :exports none
+  def price_calc_x(arr):
+      """Provides series of 3 equations when x varies"""
+
+      sigma_v, R_v, D_v = arr
+
+
+      p1 = (test_x[0] * np.exp(-D_v * tau_v) *
+            norm.cdf(d1_calc(test_x[0], K_v, tau_v, sigma_v, R_v, D_v))
+            - K_v * np.exp(-R_v * tau_v) *
+            norm.cdf(d2_calc(test_x[0], K_v, tau_v, sigma_v, R_v, D_v))) - test_x_miss_prem[0]
+
+      p2 = (test_x[1] * np.exp(-D_v * tau_v) * norm.cdf(d1_calc(test_x[1], K_v, tau_v, sigma_v, R_v, D_v))
+            - K_v * np.exp(-R_v * tau_v) * norm.cdf(d2_calc(test_x[1], K_v, tau_v, sigma_v, R_v, D_v))) - test_x_miss_prem[1]
+
+      p3 = (test_x[2] * np.exp(-D_v * tau_v) * norm.cdf(d1_calc(test_x[2], K_v, tau_v, sigma_v, R_v, D_v))
+            - K_v * np.exp(-R_v * tau_v) * norm.cdf(d2_calc(test_x[2], K_v, tau_v, sigma_v, R_v, D_v))) - test_x_miss_prem[2]
+
+      return [p1, p2, p3]
+#+end_src
+
+
+#+name: price_calc_K
+#+begin_src python :session MyPy :exports none
+def price_calc_K(arr):
+    """Provides series of 3 equations when K is varied"""
+
+    sigma_v, R_v, D_v = arr
+
+    p1 = (x_v * np.exp(-D_v * tau_v) * norm.cdf(d1_calc(x_v, test_K[0], tau_v, sigma_v, R_v, D_v))
+          - test_K[0] * np.exp(-R_v * tau_v) * norm.cdf(d2_calc(x_v, test_K[0], tau_v, sigma_v, R_v, D_v)) -
+          test_K_miss_prem[0])
+
+    p2 = (x_v * np.exp(-D_v * tau_v) * norm.cdf(d1_calc(x_v, test_K[1], tau_v, sigma_v, R_v, D_v))
+          - test_K[1] * np.exp(-R_v * tau_v) * norm.cdf(d2_calc(x_v, test_K[1], tau_v, sigma_v, R_v, D_v)) -
+          test_K_miss_prem[1])
+
+    p3 = (x_v * np.exp(-D_v * tau_v) * norm.cdf(d1_calc(x_v, test_K[2], tau_v, sigma_v, R_v, D_v))
+          - test_K[2] * np.exp(-R_v * tau_v) * norm.cdf(d2_calc(x_v, test_K[2], tau_v, sigma_v, R_v, D_v)) -
+          test_K_miss_prem[2])
+
+    return [p1, p2, p3]
+#+end_src
+
+#+name: price_calc_tau
+#+begin_src python :session MyPy :exports none 
+def price_calc_tau(arr):
+    """Returns a series of 3 equations when tau is varied"""
+
+    sigma_v, R_v, D_v = arr
+
+
+    p1 = (x_v * np.exp(-D_v * test_tau[0]) * norm.cdf(d1_calc(x_v, K_v, test_tau[0], sigma_v, R_v, D_v))
+          - K_v * np.exp(-R_v * test_tau[0]) * norm.cdf(d2_calc(x_v, K_v, test_tau[0], sigma_v, R_v, D_v)) -
+          test_tau_miss_prem[0])
+
+    p2 = (x_v * np.exp(-D_v * test_tau[1]) * norm.cdf(d1_calc(x_v, K_v, test_tau[1], sigma_v, R_v, D_v))
+          - K_v * np.exp(-R_v * test_tau[1]) * norm.cdf(d2_calc(x_v, K_v, test_tau[1], sigma_v, R_v, D_v)) -
+          test_tau_miss_prem[1])
+
+    p3 = (x_v * np.exp(-D_v * test_tau[2]) * norm.cdf(d1_calc(x_v, K_v, test_tau[2], sigma_v, R_v, D_v))
+          - K_v * np.exp(-R_v * test_tau[2]) * norm.cdf(d2_calc(x_v, K_v, test_tau[2], sigma_v, R_v, D_v)) -
+          test_tau_miss_prem[2])
+
+    return [p1, p2, p3]
+#+end_src
+
+#+name: inverseVarDeclaration
+#+begin_src python :session MyPy :exports none
+  # variable selection from Bouchouev
+  x = 710.82
+  tau = 43/252
+  R = 0.05
+  D = 0.02
+
+
+  # variable selection from me
+  sigma = 0.25
+  K = 730
+
+  test_x = np.array([670, 710.82, 730], dtype=np.float64)
+  test_K = np.array([670, 700, 730], dtype=np.float64)
+  test_tau = np.array([15/252, 43/252, 100/252], dtype=np.float64)
+  tau_v, K_v, x_v = 43/252, 730, 710.82
+  test_x_miss_prem = premium_calc(test_x, tau_v, K_v, sigma, R, D)
+  test_K_miss_prem = premium_calc(x_v, tau_v, test_K, sigma, R, D)
+  test_tau_miss_prem = premium_calc(x_v, test_tau, K_v, sigma, R, D)
+#+end_src
+
+#+name: premiumDisturbance
+#+begin_src python :eval never-export :exports none
+for i in range(3):
+    test_x_miss_prem[i] = round(test_x_miss_prem[i], 2) # cap off at 1p difference
+    test_K_miss_prem[i] = round(test_K_miss_prem[i], 2) # cap off at 1p difference
+    test_tau_miss_prem[i] = round(test_tau_miss_prem[i], 2) # cap off at 1p difference
+#+end_src
+
+
+#+name: premiumLister
+#+begin_src python :session MyPy :results output :exports none
+  print(f"The stock prices we vary across are £{test_x[0]:.2f}, £{test_x[1]:.2f}, and £{test_x[2]:.2f}, and the call option premiums \nare £{test_x_miss_prem[0]:.2f}, £{test_x_miss_prem[1]:.2f}, and £{test_x_miss_prem[2]:.2f} respectively.")
+  print(f"The strike prices we vary across are £{test_K[0]:.2f}, £{test_K[1]:.2f}, and £{test_K[2]:.2f}, and the call option premiums \nare £{test_K_miss_prem[0]:.2f}, £{test_K_miss_prem[1]:.2f}, and £{test_K_miss_prem[2]:.2f} respectively.")
+  print(f"The maturity times we vary across are {int(test_tau[0]*252)} days, {int(test_tau[1]*252)} days, and {int(test_tau[2]*252)} days, and the call option \npremiums are £{test_tau_miss_prem[0]:.2f}, £{test_tau_miss_prem[1]:.2f}, and £{test_tau_miss_prem[2]:.2f} respectively.")
+#+end_src
+
+#+RESULTS: premiumLister
+: The stock prices we vary across are £670.00, £710.82, and £730.00, and the call option premiums 
+: are £8.92, £22.43, and £31.78 respectively.
+: The strike prices we vary across are £670.00, £700.00, and £730.00, and the call option premiums 
+: are £55.60, £36.61, and £22.43 respectively.
+: The maturity times we vary across are 15 days, 43 days, and 100 days, and the call option 
+: premiums are £9.99, £22.43, and £39.55 respectively.
+
+The simulated parameters for inversion in this test are:
+\[\sigma^* = 0.25, \quad R^* = 0.05, \quad D^* = 0.02. \]
+The varied cases across the stock price are:
+
+\[\begin{cases} u(670.00, 730, 43/252, \sigma^*, R^*, D^*) = £8.92 \\ u(710.82, 730, 43/252, \sigma^*, R^*, D^*) = £22.43 \\ u(730.00, 730, 43/252, \sigma^*, R^*, D^*) = £31.78 \end{cases} \]
+
+The varied cases across the strike prices are:
+
+\[\begin{cases} u(710.82, 670, 43/252, \sigma^*, R^*, D^*) = £55.60 \\ u(710.82, 700, 43/252, \sigma^*, R^*, D^*) = £36.61 \\ u(710.82, 730, 43/252, \sigma^*, R^*, D^*) = £22.43 \end{cases} \]
+
+The varied cases across maturity time are:
+
+\[\begin{cases} u(710.82, 730, 15/252, \sigma^*, R^*, D^*) = £9.99 \\ u(710.82, 730, 43/252, \sigma^*, R^*, D^*) = £22.43 \\ u(710.82, 730, 100/252, \sigma^*, R^*, D^*) = £39.55 \end{cases} \]
+
+#+name: alg::linear_solveCall
+#+caption: Example Call for =least_squares= function with Trust Region Reflective algorithm for initial conditions $(\sigma^0 = 0.5, R^0 = 0.02, D^0 = 0)^\top$, subject to boundary conditions $0<\sigma \leq 0.5, \; 0<R\leq 0.09, \; 0 \leq D \leq 0.5653$, where =price_calc_x= is the vector of simulateous equations.
+#+begin_src python :eval never-export
+  sigma, R, D = (least_squares(price_calc_x, [0.5, 0.02, 0.], bounds = ([1e-14, 1e-14, 0.], [1.4, 0.09, 0.5653]))).get("x")
+#+end_src
+
+#+name: linear_solverFullPrecision
+#+begin_src python :session MyPy :results output :exports none
+  print(test_x_miss_prem)
+  sigma_x_est, R_x_est, D_x_est = (least_squares(price_calc_x, [0.5, 0.06, 0.],
+                                           bounds = ([1e-14, 1e-14, 0.0],
+                                                     [3., .09, .5653]))).get("x")
+  print(f"The volatility from x is estimated at {sigma_x_est:.5f}, the interest rate at {R_x_est:.5f}, and the dividend at {D_x_est:.5f}")
+
+  # for K
+  sigma_K_est, R_K_est, D_K_est = (least_squares(price_calc_K, [0.5, 0.06, 0.],
+                                           bounds = ([1e-14, 1e-14, 0.0],
+                                                     [3., .09, .5653]))).get("x")
+  print(f"The volatility from K is estimated at {sigma_K_est:.5f}, the interest rate at {R_K_est:.5f}, and the dividend at {D_K_est:.5f}")
+
+  # for tau
+  sigma_tau_est, R_tau_est, D_tau_est = (least_squares(price_calc_tau, [0.5, 0.06, 0.],
+                                           bounds = ([1e-14, 1e-14, 0.0],
+                                                     [3., .09, .5653]))).get("x")
+
+  print("reached")
+  print(f"The volatility from tau is estimated at {sigma_tau_est:.5f}, the interest rate at {R_tau_est:.5f}, and the dividend at {D_tau_est:.5f}")
+#+end_src
+
+At full precision, this method recovers the parameters with an extremely high degree of accuracy (Table [[table::paramsR-1]]), with no discernable noise at 5 d.p. If the precision is reduced down such that only the first 5 decimal points are given (Table [[table::paramsR5]]), then recovery of \mu becomes more unstable, although \sigma remains stable to 5 d.p. Finally, if the precision is reduced to 2 decimal places (Table [[table::paramsR2]]), then noise is even discernable in the recovery of \sigma. The recovery of \mu increases in divergence from the true value, since /R/ and /D/ increase or decrease in the same direction in these cases, it cannot be said that \mu is accurately or stably recovered but the proportions are lost. It is clear that even simply rounding for currency can induce a considerable amount of instability for the graphical method, making it unreliable for inverting parameters real market option prices.
+
+Figure ([[fig::inversionaccuracy]]) shows that, in the case where premiums are rounded to 2 d.p., that the simultaneous equation inversion calculated from variations in the stock price alone tend to be closest to the true values of the inverted parameters. Estimates calculated from variations in \tau ceteris paribus tend to be the next most accurate, but inversions based on variations in the strike price tend to be the least accurate. This could pose a major theoretical problem since the most plentiful data that fulfils the ceteris paribus restrictions tend to be options that have entirely identical restrictions apart from their strike prices.
+
+
+#+name: table::paramsR-1
+#+caption: Recovered parameters with full precision (initial guesses were $(\sigma^0 = 0.5, R^0 = 0.02, D^0 = 0)^\top$)
+| Parameter            | Volatility | Interest Rate | Dividend |
+|----------------------+------------+---------------+----------|
+| True Value           |       0.25 |          0.05 |     0.02 |
+| Recovered from $x$   |    0.25000 |       0.05000 |  0.02000 |
+| Recovered from $K$   |    0.25000 |       0.05000 |  0.02000 |
+| Recovered from $T-t$ |    0.25000 |       0.05000 |  0.02000 |
+
+
+#+name: linear_solver5dp
+#+begin_src python :session MyPy :results output :exports none
+  for i, price in enumerate(test_x_miss_prem):
+      test_x_miss_prem[i] = round(price, 5)
+      test_K_miss_prem[i] = round(test_K_miss_prem[i], 5) 
+      test_tau_miss_prem[i] = round(test_tau_miss_prem[i], 5)
+      
+  print(test_x_miss_prem)
+  sigma_x_est, R_x_est, D_x_est = (least_squares(price_calc_x, [0.5, 0.06, 0.],
+                                           bounds = ([1e-14, 1e-14, 0.0],
+                                                     [3., .09, .5653]))).get("x")
+  print(f"The volatility from x is estimated at {sigma_x_est:.5f}, the interest rate at {R_x_est:.5f}, and the dividend at {D_x_est:.5f}")
+
+  # for K
+  sigma_K_est, R_K_est, D_K_est = (least_squares(price_calc_K, [0.5, 0.06, 0.],
+                                           bounds = ([1e-14, 1e-14, 0.0],
+                                                     [3., .09, .5653]))).get("x")
+  print(f"The volatility from K is estimated at {sigma_K_est:.5f}, the interest rate at {R_K_est:.5f}, and the dividend at {D_K_est:.5f}")
+
+  # for tau
+  sigma_tau_est, R_tau_est, D_tau_est = (least_squares(price_calc_tau, [0.5, 0.06, 0.],
+                                           bounds = ([1e-14, 1e-14, 0.0],
+                                                     [3., .09, .5653]))).get("x")
+
+  print("reached")
+  print(f"The volatility from tau is estimated at {sigma_tau_est:.5f}, the interest rate at {R_tau_est:.5f}, and the dividend at {D_tau_est:.5f}")
+#+end_src
+
+
+#+name: table::paramsR5
+#+caption: Recovered parameters with 5 decimal points (initial guesses were $(\sigma^0 = 0.5, R^0 = 0.02, D^0 = 0)^\top$)
+| Parameter            | Volatility | Interest Rate | Dividend |
+|----------------------+------------+---------------+----------|
+| True Value           |       0.25 |          0.05 |     0.02 |
+| Recovered from $x$   |    0.25000 |       0.05002 |  0.02001 |
+| Recovered from $K$   |    0.25000 |       0.04998 |  0.01998 |
+| Recovered from $T-t$ |    0.25000 |       0.05001 |  0.02001 |
+
+
+#+name: linear_solver3dp
+#+begin_src python :session MyPy :results output :exports none
+  for i, price in enumerate(test_x_miss_prem):
+      test_x_miss_prem[i] = round(price, 3)
+      test_K_miss_prem[i] = round(test_K_miss_prem[i], 3)
+      test_tau_miss_prem[i] = round(test_tau_miss_prem[i], 3)
+
+  print(test_x_miss_prem)
+  sigma_x_est, R_x_est, D_x_est = (least_squares(price_calc_x, [0.5, 0.06, 0.],
+                                           bounds = ([1e-14, 1e-14, 0.0],
+                                                     [3., .09, .5653]))).get("x")
+  print(f"The volatility from x is estimated at {sigma_x_est:.5f}, the interest rate at {R_x_est:.5f}, and the dividend at {D_x_est:.5f}")
+
+  # for K
+  sigma_K_est, R_K_est, D_K_est = (least_squares(price_calc_K, [0.5, 0.06, 0.],
+                                           bounds = ([1e-14, 1e-14, 0.0],
+                                                     [3., .09, .5653]))).get("x")
+  print(f"The volatility from K is estimated at {sigma_K_est:.5f}, the interest rate at {R_K_est:.5f}, and the dividend at {D_K_est:.5f}")
+
+  # for tau
+  sigma_tau_est, R_tau_est, D_tau_est = (least_squares(price_calc_tau, [0.5, 0.06, 0.],
+                                           bounds = ([1e-14, 1e-14, 0.0],
+                                                     [3., .09, .5653]))).get("x")
+
+  print("reached")
+  print(f"The volatility from tau is estimated at {sigma_tau_est:.5f}, the interest rate at {R_tau_est:.5f}, and the dividend at {D_tau_est:.5f}")
+#+end_src
+
+
+#+name: linear_solver2dp
+#+begin_src python :session MyPy :results output :exports none
+  for i, price in enumerate(test_x_miss_prem):
+      test_x_miss_prem[i] = round(price, 2)
+      test_K_miss_prem[i] = round(test_K_miss_prem[i], 2)
+      test_tau_miss_prem[i] = round(test_tau_miss_prem[i], 2)
+
+  print(test_x_miss_prem)
+  sigma_x_est, R_x_est, D_x_est = (least_squares(price_calc_x, [0.5, 0.06, 0.],
+                                           bounds = ([1e-14, 1e-14, 0.0],
+                                                     [3., .09, .5653]))).get("x")
+  print(f"The volatility from x is estimated at {sigma_x_est:.5f}, the interest rate at {R_x_est:.5f}, and the dividend at {D_x_est:.5f}")
+
+  # for K
+  sigma_K_est, R_K_est, D_K_est = (least_squares(price_calc_K, [0.5, 0.06, 0.],
+                                           bounds = ([1e-14, 1e-14, 0.0],
+                                                     [3., .09, .5653]))).get("x")
+  print(f"The volatility from K is estimated at {sigma_K_est:.5f}, the interest rate at {R_K_est:.5f}, and the dividend at {D_K_est:.5f}")
+
+  # for tau
+  sigma_tau_est, R_tau_est, D_tau_est = (least_squares(price_calc_tau, [0.5, 0.06, 0.],
+                                           bounds = ([1e-14, 1e-14, 0.0],
+                                                     [3., .09, .5653]))).get("x")
+
+  print("reached")
+  print(f"The volatility from tau is estimated at {sigma_tau_est:.5f}, the interest rate at {R_tau_est:.5f}, and the dividend at {D_tau_est:.5f}")
+#+end_src
+
+#+name: table::paramsR2
+#+caption: Recovered parameters with 2 decimal points (initial guesses were $(\sigma^0 = 0.5, R^0 = 0.02, D^0 = 0)^\top$)
+| Parameter            | Volatility | Interest Rate | Dividend |
+|----------------------+------------+---------------+----------|
+| True Value           |       0.25 |          0.05 |     0.02 |
+| Recovered from $x$   |    0.24997 |       0.05533 |  0.02479 |
+| Recovered from $K$   |    0.25063 |       0.03152 |  0.00416 |
+| Recovered from $T-t$ |    0.24978 |       0.05744 |  0.02634 |
+
+#+name: inverseAccuracyGraph
+#+begin_src python :session MyPy :results graphics file output :file images/inverseaccuracy.svg :exports none
+  labels = [
+      "True Value",
+      r"Calculated from $x$",
+      r"Calculated from $K$",
+      "Calculated from maturity"
+  ]
+
+  sigma_values = [
+      sigma,
+      sigma_x_est,
+      sigma_K_est,
+      sigma_tau_est
+  ]
+
+  R_values = [
+      R,
+      R_x_est,
+      R_K_est,
+      R_tau_est
+  ]
+
+  D_values = [
+      D,
+      D_x_est,
+      D_K_est,
+      D_tau_est
+  ]
+
+  positions = np.arange (len(labels))
+
+  fig, axes = plt.subplots(1,3,figsize=(15,5))
+
+  axes[0].scatter(positions, sigma_values, s=70)
+  axes[0].axhline(
+      sigma,
+      linestyle="--",
+      label="Original value",
+  )
+  axes[0].set_title(r"Estimates of $\sigma$")
+  axes[0].set_ylabel(r"$\sigma$")
+  axes[0].set_xticks(positions, labels, rotation=30, ha="right")
+  axes[0].grid(axis="y", alpha=0.3)
+  axes[0].legend()
+
+  # Interest-rate estimates
+  axes[1].scatter(positions, R_values, s=70)
+  axes[1].axhline(
+      R,
+      linestyle="--",
+      label="Original value",
+  )
+  axes[1].set_title(r"Estimates of $R$")
+  axes[1].set_ylabel(r"$R$")
+  axes[1].set_xticks(positions, labels, rotation=30, ha="right")
+  axes[1].grid(axis="y", alpha=0.3)
+  axes[1].legend()
+
+  # Dividend-yield estimates
+  axes[2].scatter(positions, D_values, s=70)
+  axes[2].axhline(
+      D,
+      linestyle="--",
+      label="Original value",
+  )
+  axes[2].set_title(r"Estimates of $D$")
+  axes[2].set_ylabel(r"$D$")
+  axes[2].set_xticks(positions, labels, rotation=30, ha="right")
+  axes[2].grid(axis="y", alpha=0.3)
+  axes[2].legend()
+
+  fig.suptitle("Original and recovered Black–Scholes parameters")
+  fig.tight_layout()
+
+  plt
+#+end_src 
+
+
+
+
+#+name: linear_solver1dp
+#+begin_src python :session MyPy :results output :exports none
+  for i, price in enumerate(test_x_miss_prem):
+      test_x_miss_prem[i] = round(price, 1)
+      test_K_miss_prem[i] = round(test_K_miss_prem[i], 1)
+      test_tau_miss_prem[i] = round(test_tau_miss_prem[i], 1)
+
+  print(test_x_miss_prem)
+  sigma_x_est, R_x_est, D_x_est = (least_squares(price_calc_x, [0.5, 0.06, 0.],
+                                           bounds = ([1e-14, 1e-14, 0.0],
+                                                     [3., .09, .5653]))).get("x")
+  print(f"The volatility from x is estimated at {sigma_x_est:.5f}, the interest rate at {R_x_est:.5f}, and the dividend at {D_x_est:.5f}")
+
+  # for K
+  sigma_K_est, R_K_est, D_K_est = (least_squares(price_calc_K, [0.5, 0.06, 0.],
+                                           bounds = ([1e-14, 1e-14, 0.0],
+                                                     [3., .09, .5653]))).get("x")
+  print(f"The volatility from K is estimated at {sigma_K_est:.5f}, the interest rate at {R_K_est:.5f}, and the dividend at {D_K_est:.5f}")
+
+  # for tau
+  sigma_tau_est, R_tau_est, D_tau_est = (least_squares(price_calc_tau, [0.5, 0.06, 0.],
+                                           bounds = ([1e-14, 1e-14, 0.0],
+                                                     [3., .09, .5653]))).get("x")
+
+  print("reached")
+  print(f"The volatility from tau is estimated at {sigma_tau_est:.5f}, the interest rate at {R_tau_est:.5f}, and the dividend at {D_tau_est:.5f}")
+#+end_src
+
+
+
+#+name: fig::inversionaccuracy
+#+caption: Comparison of estimates for inverted parameters across inputs with option premiums rounded to 2 d.p., (initial guesses were $(\sigma^0 = 0.5, R^0 = 0.02, D^0 = 0)^\top$).
+[[file:images/inverseaccuracy.svg]]
+
+
+
+*** Randomly stochastically disturbed premiums
+:LOGBOOK:
+CLOCK: [2026-07-12 Sun 10:00]--[2026-07-12 Sun 21:37] => 11:37
+:END:
+
+Rounding is not the only source of error, there will likely be random or systematic differences in the optimal price for the true market parameters and the premiums in open European options due to reasons like asymmetric information or misplaced expectations. It is possible to simulate random disturbances in the price using the standard normal distribution $X \sim N(0,1)$. The true parameters were again:
+\[\sigma^* = 0.25, \quad R^* = 0.05, \quad D^* = 0.02, \]
+Figure ([[fig::recoveredstochrand]]) shows the results. While the modal estimates for the volatility from variations in /K/ and \tau were approximately around the correct value of 0.25, there was significant variation. Volatility from variations in /x/ were also skewed lower than the true value. Interestingly, the recovered interest rate follows a bimodal distribution of values close to 0 and values close to 1, while the dividend rate had most of its estimates close to 0, with considerable tail distributions. Figure ([[fig::murandomdist]]) shows that the true value of \mu was in the most common ranges for inversions based on variations in /K/ and \tau, but variations in $x$ ended up overestimating \mu more often. The shape of individual recoveries is in Figure ([[fig::BestStochInvAccPlot]]). While recovered volatility seems roughly randomly recovered for \tau and /K/, there is a "bottom-heavy" distribution across /x/. The bimodal distribution of /R/ has visually more density around the true value in \tau and /K/ than from variations in /x/, but /x/ seems to have visually more stability around /D/. This evidence would suggest that volatility estimates recovered from variations in \tau are generally more stable against stochastic disturbances, but that variations in /K/ are generally more accurately clustered around the true \mu. The recovery of /R/ and /D/ however, is extremely inaccurate, and recovering volatility is highly unstable as well. The combination of rounding error and stochastic deviation would likely pose fatal to attempts to solve the Black-Scholes inverse problem using simultaneous equations.
+
+#+name: VariableDeclarationRStochDist
+#+begin_src python :session MyPy :exports none
+  # Stochastic disturbance ===========================================================
+  # variable selection from Bouchouev
+  # x = 710.82
+  # tau = 43/252
+  # R = 0.05
+  # D = 0.02
+
+
+  # variable selection from me
+  # sigma = 0.25
+  # K = 730
+  
+  # test_x = np.array([670, 710.82, 730])
+  # test_K = np.array([670, 700, 730])
+  # test_tau = np.array([15/252, 43/252, 100/252])
+  # tau_v, K_v, x_v = 43/252, 730, 710.82
+  test_x_miss_prem = premium_calc(test_x, tau_v, K_v, sigma, R, D)
+  test_K_miss_prem = premium_calc(x_v, tau_v, test_K, sigma, R, D)
+  test_tau_miss_prem = premium_calc(x_v, test_tau, K_v, sigma, R, D)
+
+  # this setup will successfully instantiate n_tests amount of stochastically disturbed option premiums
+  # premiums all come from the same underlying distribution, at this point disturbance is random
+
+  n_tests = 1000
+  dist_mu = 0
+  dist_sd= 1
+#+end_src
+
+#+RESULTS: VariableDeclarationRStochDist
+
+#+name: DisturbanceProcessRandom
+#+begin_src python :session MyPy :exports none
+  np.random.seed(my_seed)
+
+  half_n = n_tests // 2
+
+  # x
+      
+  disturbances = np.random.normal (dist_mu, dist_sd, (half_n, 3))
+  disturbed_x_set = np.vstack([test_x_miss_prem + disturbances, test_x_miss_prem - disturbances,])
+
+  for i, disturbed_x in enumerate(disturbed_x_set):
+      for j, val in enumerate (disturbed_x):
+          disturbed_x[j] = round(disturbed_x[j],2)
+
+
+  # K
+  disturbances = np.random.normal (dist_mu, dist_sd, (half_n, 3))
+  disturbed_K_set = np.vstack([test_K_miss_prem + disturbances, test_K_miss_prem - disturbances,])
+
+  for i, disturbed_K in enumerate(disturbed_K_set):
+      for j, val in enumerate (disturbed_K):
+          disturbed_K[j] = round(disturbed_K[j],2)
+
+  # tau
+  disturbances = np.random.normal (dist_mu, dist_sd, (half_n, 3))
+  disturbed_tau_set = np.vstack([test_tau_miss_prem + disturbances, test_tau_miss_prem - disturbances,])
+
+  for i, disturbed_tau in enumerate(disturbed_tau_set):
+      for j, val in enumerate (disturbed_tau):
+          disturbed_tau[j] = round(disturbed_tau[j],2)
+#+end_src
+
+
+#+name: OptimisationCallsRandom
+#+begin_src python :session MyPy :exports none
+  # actual optimisation calls ====================================================
+  MC_x_inversions = []
+  MC_K_inversions = []
+  MC_tau_inversions = []
+
+  holder_x = test_x_miss_prem   # preserve original premiums
+  holder_K = test_K_miss_prem
+  holder_tau = test_tau_miss_prem
+
+  # MC x inversions
+  for disturbed_x in disturbed_x_set:
+
+      test_x_miss_prem = disturbed_x      # overwrite with disturbed premiums
+
+      # specific case inversions
+      MC_x_inversions.append((least_squares(price_calc_x, [0.5, 0.03, 0.],
+                                            bounds = ([1e-14, 1e-14, 0.0], [3., .09, .5653]))).get("x"))
+          
+      test_x_miss_prem = holder_x   # overwrite with original premium
+
+  #MC K inversions    
+  for disturbed_K in disturbed_K_set:
+
+      test_K_miss_prem = disturbed_K      # overwrite with disturbed premiums
+
+      # specific case inversions
+      MC_K_inversions.append((least_squares(price_calc_K, [0.5, 0.03, 0.],
+                                            bounds = ([1e-14, 1e-14, 0.0], [3., .09, .5653]))).get("x"))
+        
+  test_K_miss_prem = holder_K   # overwrite with original premium
+
+  # MC tau inversions
+  for disturbed_tau in disturbed_tau_set:
+
+      test_tau_miss_prem = disturbed_tau      # overwrite with disturbed premiums
+
+      # specific case inversions
+      MC_tau_inversions.append((least_squares(price_calc_tau, [0.5, 0.03, 0.],
+                                              bounds = ([1e-14, 1e-14, 0.0], [3., .09, .5653]))).get("x"))
+      
+  test_tau_miss_prem = holder_tau   # overwrite with original premium
+
+#+end_src
+
+#+name: MomentCalculationRandom
+#+begin_src python :session MyPy :exports none
+# Moment Calculation ====================================================
+
+MC_x_inversions = np.array(MC_x_inversions)
+MC_K_inversions = np.array(MC_K_inversions)
+MC_tau_inversions = np.array(MC_tau_inversions)
+
+
+
+# x 
+total_x_volatility = []
+total_x_R = []
+total_x_D = []
+
+for vals in MC_x_inversions:
+
+    total_x_volatility.append(vals[0])
+    total_x_R.append(vals[1])
+    total_x_D.append(vals[2])
+
+total_x_volatility = np.array(total_x_volatility, dtype=np.float64)
+total_x_R = np.array(total_x_R, dtype=np.float64)
+total_x_D = np.array(total_x_D, dtype=np.float64)
+
+sigma_x_est, R_x_est, D_x_est = np.mean(total_x_volatility), np.mean(total_x_R), np.mean(total_x_D)
+sigma_x_sd, R_x_sd, D_x_sd = np.std(total_x_volatility), np.std(total_x_R), np.std(total_x_D)
+
+
+
+# K
+
+total_K_volatility = []
+total_K_R = []
+total_K_D = []
+
+for vals in MC_K_inversions:
+
+    total_K_volatility.append(vals[0])
+    total_K_R.append(vals[1])
+    total_K_D.append(vals[2])
+
+total_K_volatility = np.array(total_K_volatility, dtype=np.float64)
+total_K_R = np.array(total_K_R, dtype=np.float64)
+total_K_D = np.array(total_K_D, dtype=np.float64)
+    
+sigma_K_est, R_K_est, D_K_est = np.mean(total_K_volatility), np.mean(total_K_R), np.mean(total_K_D)
+sigma_K_sd, R_K_sd, D_K_sd = np.std(total_K_volatility), np.std(total_K_R), np.std(total_K_D)
+
+
+
+# tau
+
+total_tau_volatility = []
+total_tau_R = []
+total_tau_D = []
+
+for vals in MC_tau_inversions:
+
+    total_tau_volatility.append(vals[0])
+    total_tau_R.append(vals[1])
+    total_tau_D.append(vals[2])
+
+total_tau_volatility = np.array(total_tau_volatility, dtype=np.float64)
+total_tau_R = np.array(total_tau_R, dtype=np.float64)
+total_tau_D = np.array(total_tau_D, dtype=np.float64)
+
+
+sigma_tau_est, R_tau_est, D_tau_est = np.mean(total_tau_volatility), np.mean(total_tau_R), np.mean(total_tau_D)
+sigma_tau_sd, R_tau_sd, D_tau_sd = np.std(total_tau_volatility), np.std(total_tau_R), np.std(total_tau_D)
+#+end_src
+
+#+name: ProofOfConcept
+#+begin_src python :session MyPy :results output :exports none
+
+print(f"The volatility from x is estimated at {sigma_x_est:.5f}, the interest rate at {R_x_est:.5f}, and the dividend at {D_x_est:.5f}")
+
+
+print(f"The volatility from K is estimated at {sigma_K_est:.5f}, the interest rate at {R_K_est:.5f}, and the dividend at {D_K_est:.5f}")
+
+print(f"The volatility from tau is estimated at {sigma_tau_est:.5f}, the interest rate at {R_tau_est:.5f}, and the dividend at {D_tau_est:.5f}")
+
+
+print(f"The volatility from x has variance of estimates at {(sigma_x_sd):.5f}, the intersd rate at {(R_x_sd):.5f}, and the dividend at {(D_x_sd):.5f}")
+
+
+print(f"The volatility from K has variance of estimates at {(sigma_K_sd):.5f}, the intersd rate at {(R_K_sd):.5f}, and the dividend at {(D_K_sd):.5f}")
+
+print(f"The volatility from tau has variance of estimates at {(sigma_tau_sd):.5f}, the intersd rate at {(R_tau_sd):.5f}, and the dividend at {(D_tau_sd):.5f}")
+
+#+end_src
+
+#+RESULTS: ProofOfConcept
+: The volatility from x is estimated at 0.25286, the interest rate at 0.06361, and the dividend at 0.04003
+: The volatility from K is estimated at 0.25045, the interest rate at 0.05958, and the dividend at 0.03014
+: The volatility from tau is estimated at 0.25007, the interest rate at 0.05888, and the dividend at 0.02856
+: The volatility from x has variance of estimates at 0.02487, the intersd rate at 0.03622, and the dividend at 0.05087
+: The volatility from K has variance of estimates at 0.01844, the intersd rate at 0.03467, and the dividend at 0.03306
+: The volatility from tau has variance of estimates at 0.01676, the intersd rate at 0.03512, and the dividend at 0.03120
+
+
+
+
+
+#+name: RecoveredStochasticRandomDistribution
+#+begin_src python :session MyPy :results graphics file output :file images/recoveredstochrand.svg :exports none
+  fig, axes = plt.subplots(3, 3, figsize=(12, 9))
+
+  hist_data = [ [ total_x_volatility, total_x_R, total_x_D ],
+                [ total_K_volatility, total_K_R, total_K_D ],
+                [ total_tau_volatility, total_tau_R, total_tau_D ]]
+
+  col_titles = [ "Volatility", "Interest Rate", "Dividend Rate" ]
+  row_titles = [ r"Under $x$", r"Under $K$", "Under $T-t$" ]
+  x_labs = [ r"Volatility $\sigma$", r"Interest Rate $R$", r"Dividend Rate $D$" ]
+
+
+  for row in range (3):
+      for col in range (3):
+          axes[row,col].hist(hist_data[row][col])
+          axes[row,col].set_xlabel(x_labs[col])
+
+          if row == 0:
+              axes[row,col].set_title(col_titles[col])
+
+          if col == 0:
+              axes[row,col].set_ylabel(row_titles[row], rotation=90,
+                                       labelpad=15, fontsize=11)
+
+  fig.suptitle("Recovered stochastically disturbed Black-Scholes parameter distributions")
+  fig.tight_layout(rect=[0,0,1,.95])
+  plt
+#+end_src
+
+#+name: fig::recoveredstochrand
+#+caption: Distribution of recovered Black-Scholes under stochastic disturbances to premiums, 1000 samples, disturbance was $N(0,1)$
+[[file:images/recoveredstochrand.svg]]
+
+
+
+#+name: PlotOfStochDistRandom
+#+begin_src python :session MyPy :results graphics file output :file images/stochdistrandaccbest.svg :exports none
+  rng = np.random.default_rng(42)
+
+  np.random.seed(1234)
+    
+  disturbed_sets = [
+      disturbed_x_set,
+      disturbed_K_set,
+      disturbed_tau_set,
+  ]
+
+  inversion_sets = [
+      MC_x_inversions,
+      MC_K_inversions,
+      MC_tau_inversions,
+  ]
+
+  row_labels = [
+      r"Under $x$",
+      r"Under $K$",
+      r"Under $\tau$",
+  ]
+
+  column_titles = [
+      r"Recovered volatility $\sigma$",
+      r"Recovered interest rate $R$",
+      r"Recovered dividend rate $D$",
+  ]
+
+  premium_labels = {
+      "x": [
+          rf"$C(x={test_x[0]:g})$",
+          rf"$C(x={test_x[1]:g})$",
+          rf"$C(x={test_x[2]:g})$",
+      ],
+      "K": [
+          rf"$C(K={test_K[0]:g})$",
+          rf"$C(K={test_K[1]:g})$",
+          rf"$C(K={test_K[2]:g})$",
+      ],
+      "tau": [
+          rf"$C(\tau={test_tau[0]:g})$",
+          rf"$C(\tau={test_tau[1]:g})$",
+          rf"$C(\tau={test_tau[2]:g})$",
+      ],
+  }
+
+  all_premium_labels = [
+      premium_labels["x"],
+      premium_labels["K"],
+      premium_labels["tau"],
+  ]
+
+  original_premium_sets = [
+      test_x_miss_prem,
+      test_K_miss_prem,
+      test_tau_miss_prem,
+  ]
+
+  fig, axes = plt.subplots(
+      3,
+      3,
+      figsize=(15, 12),
+  )
+
+  for row, (disturbed,
+            original,
+            inversions,
+            labels,) in enumerate(
+        zip(
+            disturbed_sets,
+            original_premium_sets,
+            inversion_sets,
+            all_premium_labels,
+        )
+    ):
+        premium_errors = disturbed - original[None, :]
+
+        for parameter_index in range(3):
+            ax = axes[row, parameter_index]
+
+            for premium_index in range(3):
+                x_data = premium_errors[:, premium_index]
+                y_data = inversions[:, parameter_index]
+
+                n_display = min(200, len(x_data))
+                display_indices = rng.choice(
+                    len(x_data),
+                    size=n_display,
+                    replace=False,
+                )
+
+                ax.scatter(
+                    x_data[display_indices],
+                    y_data[display_indices],
+                    # marker=markers[premium_index],
+                    facecolors="none",
+                    edgecolors="black",
+                    linewidths=0.7,
+                    s=22,
+                    # label=labels[premium_index],
+                )
+
+                # I want a couple lines over each true value
+                if parameter_index == 0:
+                    tru_param_val = sigma
+                elif parameter_index == 1:
+                    tru_param_val = R
+                elif parameter_index == 2:
+                    tru_param_val = D
+                else:
+                    print("fuck")
+                    
+                ax.axhline(
+                    tru_param_val,
+                    linestyle="--",
+                    # label="Original value",
+                )
+
+                if row == 0:
+                    ax.set_title(column_titles[parameter_index])
+
+                if parameter_index == 0:
+                    ax.set_ylabel(row_labels[row])
+
+                ax.set_xlabel(r"Premium disturbance $\widetilde C-C$")
+                ax.grid(alpha=0.3)
+                
+  fig.suptitle("Recovered parameters against stochastic premium disturbances", fontsize=14,)
+
+  fig.tight_layout(rect=[0, 0, 1, 0.96])
+  plt
+#+end_src
+
+#+name: plottingMuforStochDist
+#+begin_src python :session MyPy :results graphics file output :file images/stochdistmu.svg :exports none
+  total_x_mu = total_x_R - total_x_D
+  total_K_mu = total_K_R - total_K_D
+  total_tau_mu = total_tau_R - total_tau_D
+  mu = R-D
+
+  fig, axes = plt.subplots(1,3, figsize=(10,4))
+
+  axes[0].hist(total_x_mu)
+  axes[0].axvline(mu, color='k', linestyle='dashed', linewidth=1)
+  axes[0].set_title(r"Estimate from $x$")
+  axes[0].set_ylabel("Frequency")
+  axes[0].set_xlabel(r"Drift $\mu$")
+
+  axes[1].hist(total_K_mu)
+  axes[1].axvline(mu, color='k', linestyle='dashed', linewidth=1)
+  axes[1].set_title(r"Estimate from $K$")
+  axes[1].set_ylabel("Frequency")
+  axes[1].set_xlabel(r"Drift $\mu$")
+
+  axes[2].hist(total_tau_mu)
+  axes[2].axvline(mu, color='k', linestyle='dashed', linewidth=1)
+  axes[2].set_title(r"Estimate from $T-t$")
+  axes[2].set_ylabel("Frequency")
+  axes[2].set_xlabel(r"Drift $\mu$")
+
+  fig.suptitle("Recovered drift term from stochastically disturbed premiums")
+  fig.tight_layout(h_pad=10)
+
+  plt
+#+end_src
+
+#+name: fig::murandomdist
+#+caption: Recovered $\mu = R-D$ for stochastically disturbed Black-Scholes premiums, 1000 samples, disturbance was $N(0,1)$. True values given by dotted line.
+[[file:images/stochdistmu.svg]]
+
+
+
+#+name: fig::BestStochInvAccPlot
+#+caption: Distribution of recovered variables from each distribution. True value shown with dotted line, 1000 samples, disturbance was $N(0,1)$.
+[[file:images/stochdistrandaccbest.svg]]
+
+
+
+** Well-posed solution to inverse problem
+
+[cite:@lishangNewWellposedAlgorithm2003] proposed a well-posed algorithm for the recovery of Black-Scholes parameters in 2003, considering the case where volatility is constant and the case where volatility is a function of space [cite:@lishangNewWellposedAlgorithm2003 p. 454]. As derived in Section [[#section::lishangconvcauchy]], equations ([[eq::lishangcauchy]]) and ([[eq::lishangcauchycond]]) define the problem as a Cauchy and accompanying adjoint equation:
+#+name: eq::cauchyoriginal
+\begin{equation}
+v_\tau = a(y) \left(v_{yy} - v_y \right) - (R-D) v_y, \quad v|_{\tau = 0} = (1-e^y)^+,
+\end{equation}
+#+name: eq::cauchyadjoriginal
+\begin{equation}
+-\phi_\tau = (a\phi)_{yy} +(a\phi)_y + (R-D)\phi_y, \quad \phi|_{\tau=\tau^*} = v(y,\tau^*) - v^*(y),
+\end{equation}
+and a scheme for variational inequality:
+#+name: eq::varineqname
+\begin{gather}
+a_0 \leq a \leq a_1, \\
+(-a_{yy} + f(y; v,\phi))(a-a_0) \leq 0,\\
+(-a_{yy} + f(y; v, \phi))(a-a_1) \leq 0,
+\end{gather}
+
+where:
+#+name: eq::varineq
+\begin{equation}
+f(y; v,\phi) = \frac{1}{N} \int^{\tau^*}_0 \phi(v_{yy} - v_y) d\tau.
+\end{equation}
+
+They propose solving ([[eq::cauchyoriginal]]) and ([[eq::cauchyadjoriginal]]) via Meyer's invariant embedding method, with the equations derived in Section ([[#section::solvecauchy]]). The exact algorithm used in this report is detailed in Section ([[#section::impleq]]). They comprehensively proposed a finite difference scheme for solving ([[eq::varineqname]])-([[eq::varineq]]) [cite:@lishangNewWellposedAlgorithm2003 p. 456]. Volatility was pointwise assigned according to three types:
+1. 'flat' volatility,
+   \[\sigma_p(x) = 0.25, \]
+2. 'smile' volatility,
+   \[\sigma_p(x) = (\ln (s / 10))^2 / 40 + 0.2, \]
+3. 'skew' volatility,
+   \[\sigma_p(x) = -(\ln(s/10))^3 / 80 + 0.2, \]
+they stated that they used $\sigma_0=0.2$ as a flat line for their initial estimate of volatility $A_0$. Additionally, $D = 0$, $R = 0.12$, $a_0 = 0.005$, $a_1 = 0.045$, $\eta \leq 10^{-4}$, $x^* = 10$, $\tau^*=1$. Variables specific to the variational inequality scheme went unlisted, but this is likely because there is no ideal set of parameters that would work perfectly for all markets. This does mean that the regularisation constant $N$ and "false" variable \alpha were not given, making it difficult to reproduce their exact optimal control conditions. While testing against the explicit Black-Scholes equation has verified the state and adjoint equation solvers are accurate, it is unfortunately beyond the scope of this report to reproduce their experiments exactly.
+
+
+
+
+It is difficult to suggest which choice of parameter would be superior, so long as it is within the reasonable bounds posed by the authors and for normal heat equation problems. Decreasing /N/ could make the variational inequality solver more "aggressive", reducing smoothing, effective for predicting volatile stock markets, it could also induce catastrophic inaccuracies. Equally, increasing /N/ could stabilise the optimal control problem, but it would reduce the significance of the key signals the function is supposed to unearth.
+
+
+
+After testing, the experiments in this paper were run with the aforementioned known parameters from the original paper, $L = M = 10$, $N = 0.01$, $\eta = 0.0001$, $\alpha = 0.45$, a maximum of 5,000 loops within the variational inequality solver, and a maximum of 600 iterations of the overall function. For the experiment itself, $x$ was chosen from the same values as [cite:@lishangNewWellposedAlgorithm2003 p. 455], with $a(y) = \sigma^2(x^* e^y)$ and premiums calculated $u^*(K) = x^* e^{-D\tau^*} V(\ln (K/x^*), \tau^*)$. As expected, when the volatility is constant, recovery of the missing volatility is trivial (table [[tables::flatresults]]) and Figure ([[fig::flatpred]]).
+
+
+The 'smile' results show evidence of some bias, while the model predicts most movements, there is some proportion of the volatility that is not adequately explained (table [[tables::smileresults]]). This could be a result of the false time step being inadequate due to a premature termination, or $N$ being too big to allow for the efficient flow of information Figure ([[fig::smilepred]]).
+
+
+When it came to the skewed results, the model regularly underestimated the volatility (table [[tables::flatresults]]). It is of interest that the original authors regularly overestimated the volatility in this case by roughly the same amount, and more research could be undertaken on market and simulated data to understand the optimal variable choices for solving the variational inequality problem. Observing Figure ([[fig::skewpred]]), there appears to be some source of bias in the recovery, rather than a clear inability to recover the volatility. It would be worth exploring more combinations of potential inputs to see whether the bias can be stabilised. 
+
+
+#+name: tables::flatresults
+#+caption: Results for 'flat' volatility, $\sigma(s)$ is the inverted volatility and $\sigma_p(x)$ is the true volatility
+| $x$                       |     4 |     6 |     8 |    10 |    12 |    14 |    16 |    18 |    20 |    22 |    24 |
+|---------------------------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------|
+| $100 \times \sigma(x)$    | 25.00 | 25.00 | 25.00 | 25.00 | 24.99 | 24.99 | 25.00 | 25.00 | 24.99 | 24.99 | 24.99 |
+| $100 \times \sigma_p (x)$ | 25.00 | 25.00 | 25.00 | 25.00 | 25.00 | 25.00 | 25.00 | 25.00 | 25.00 | 25.00 | 25.00 |
+
+#+name: tables::smileresults
+#+caption: Results for "smile" volatility, $\sigma(s)$ is the inverted volatility and $\sigma_p(x)$ is the true volatility
+| $x$                       |     4 |     6 |     8 |    10 |    12 |    14 |    16 |    18 |    20 |    22 |    24 |
+|---------------------------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------|
+| $100 \times \sigma(x)$    | 21.86 | 20.04 | 19.73 | 19.69 | 19.76 | 20.02 | 20.15 | 20.43 | 20.83 | 21.09 | 21.37 |
+| $100 \times \sigma_p (x)$ | 22.10 | 20.61 | 20.13 | 20.00 | 20.08 | 20.28 | 20.56 | 20.86 | 21.20 | 21.55 | 21.91 |
+
+#+name: tables::skewresults
+#+caption: Results for "skew" volatility, $\sigma(s)$ is the inverted volatility and $\sigma_p(x)$ is the true volatility
+| $x$                       |     4 |     6 |     8 |    10 |    12 |    14 |    16 |    18 |    20 |    22 |    24 |
+|---------------------------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------|
+| $100 \times \sigma(x)$    | 20.96 | 20.17 | 20.01 | 20.00 | 19.99 | 19.95 | 19.87 | 19.75 | 19.58 | 19.39 | 19.16 |
+| $100 \times \sigma_p (x)$ | 20.29 | 19.89 | 19.71 | 19.69 | 19.69 | 19.65 | 19.56 | 19.44 | 19.27 | 19.07 | 18.84 |
+
+
+#+name: fig::flatpred
+#+caption: Recovered volatility vs true volatility for the 'flat' volatility case
+[[file:images/flatpred.svg]]
+
+#+name: fig::smilepred
+#+caption: Recovered volatility vs true volatility for the 'smile' volatility case
+[[file:images/smilepred.svg]]
+
+#+name: fig::skewpred
+#+caption: Recovered volatility vs true volatility for the 'skewed' volatility case
+[[file:images/skewpred.svg]]
+
+
+
+* Inverting real premiums data
+
+It is worth evaluating the function on real premiums data. Bloomberg terminal contains key data for call and put options, as well as its own estimates for the implied volatility [cite:@bloombergBloombergOptionsData2026]. For this experiment, options roughly a month away were chosen, the data was collected on the 25/08/2026 at 15:34, for all call options with a maturity date on 18/09/2026. The data included the strike price for each option, call or put status, the ask, bid, and last prices, the implicit volatility, and the underlying asset price. Additionally, Bloomberg had the latest dividend rate for the company.
+
+
+The company chosen was Allianz, a European insurance company (traded in European markets) with considerable liquidity, a high volume of trading, and an above average dividend rate. Further, the risk-free rate was taken from the Fama-French market database [cite:@famaFamaFrenchDataset2026]. The call price was calculated as a simple average of the bid and ask price. To ensure the dataset could be effectively trained, repeated strike prices were removed to ensure monotonicity, with preference given to options that had high levels of open interest.
+
+
+
+The result is displayed in Figure ([[fig::strikevsvol]]), while the implicit volatility given by Bloomberg is high and clearly exhibits a smile, the local volatility solution in this case is largely constant across the strike range. The quality of the estimate can be confirmed by repricing the options using the recovered local volatility, with extremely accurate results (Figure [[fig::repricedop]]). The scheme works on a range of simulated and real datasets, and is incredibly numerically stable, holding up to a good variety of initial volatility estimates. 
+
+#+caption: Recovered local volatility for each value $u^*(K)$, parameters used were $N = 0.5$, $\eta = 10^{-7}$, the maximum steps for \alpha were 5,000, and $\alpha = 0.45$, the maximum number of overall iterations for the function was 200, $y \in (L, M) = (-5, 1)$, $\sigma \in (0.05, 0.40)$. Mean volatility was $\sigma(x) = 0.1977$
+#+name: fig::strikevsvol
+[[file:images/diagnostics_strike.svg]]
+
+
+#+caption: Repriced options from recovered volatility compared to the true price of the market options
+#+name: fig::repricedop
+[[file:images/diagnostic5.svg]]
+
+
+
+
+* Appendix
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+
+All code evaluated in place by org-babel (org version release 9.8.7) using nix-unstable Python 3.14.7 compiled natively for MacOS Tahoe 26.6.2. Package dependencies are in listing ([[listing::pydeps]]).
+#+name: listing::pydeps
+#+caption: Project dependencies
+#+begin_src python :session MyPy :exports code
+  import matplotlib.pyplot as plt
+  import numpy as np
+  from scipy.optimize import least_squares
+  from scipy.stats import norm
+#+end_src
+
+#+caption: Generator for $v(y,\tau^*)$
+#+begin_src python :eval never-export
+  def v_solver_implicit (R, D, tau, a, bounds = (10,10), x_steps = 1000, tau_steps = 504):
+      """Implementation of the (Lishang et al., 2003) Meyer solving algorithm for equation (3.1).
+
+      args: R - risk-free rate
+            D - dividend rate
+            tau - time till maturity for the option
+            a - the volatility vector
+            bounds - duple of (L,M)
+            x_steps - number of steps in space
+            tau_steps - the number of steps in tau
+
+      returns: v - fitted valuation function"""
+
+      # space variables
+      L, M = bounds
+
+      x = np.linspace (0., L+M, x_steps)
+      dx = x[1] - x[0]
+      
+      # time variable
+      delta_tau = tau / tau_steps
+
+      # defining v
+      v_last = np.maximum (1. - np.exp(x-L), 0.) # (A.1) v_0 (x) = max{1-e^y}
+      v_past = np.empty((tau_steps+1, x_steps))  # holds v(x, 0 -> \tau^*)
+      v_past[0] = v_last
+
+      # Meyer's method: v = Uz + u
+      U = np.zeros(x_steps)
+      z = np.zeros(x_steps)
+      u = np.zeros(x_steps)
+
+      for t in range (tau_steps):
+          """Loops x solving algorithm until we reach tau^*"""
+
+          # initial values
+          U[0] = 0                # (A.3)
+          u[0] = 1                # (A.4)
+
+          for i in range (1, x_steps):
+              """Initial loop runs forwards from X(0 -> L+M), fills up U and u."""
+
+              alpha = 1 / (a[i] * delta_tau) # required constants
+              beta = (a[i] + R - D) / a[i]
+
+              # implicit Euler scheme
+              A, B, C = alpha * dx, 1 + beta * dx, - U[i-1] - dx
+              U[i] = (- B + np.sqrt(B**2 - 4 * A * C)) / (2 * A)
+
+              u[i] = (u[i-1] + dx * alpha * U[i] * v_last[i]) / (1 + dx * alpha * U[i])
+
+
+          # initial condition for z
+          z[-1] = - u[-1] / U[-1] # (A.5)
+
+          for i in range (x_steps - 2, -1, -1):
+              """Backwards loop running from X(L+M -> 0), fills up z."""
+
+              lambda_ = (U[i] / (a[i] * delta_tau)) + ((a[i] + R - D) / a[i])
+              gamma = (u[i] - v_last[i]) / (a[i] * delta_tau)
+
+              z[i] = (z[i+1] - gamma * dx) / (1 + dx * lambda_)
+
+          v_next = U * z + u
+          v_past[t+1] = v_next
+          v_last = v_next.copy()
+
+      return v_past
+#+end_src
+
+#+caption: Solver for adjoint function
+#+begin_src python :eval never-export
+  def phi_solver_implicit (v_true, v_mod, a, R, D, tau, x, bounds = (10, 10), x_steps = 1000, tau_steps = 504):
+      """Implementation of the (Lishang et al., 2003) Meyer solving algorithm for equation (3.1).
+
+      args: v_true - market distributions of premiums across strike values
+            v_mod - v(y, tau^*)
+            a - volatility vector
+            R - risk-free rate
+            D - dividend rate
+            tau - time till maturity
+            x - underlying stock price
+            bounds - duple of (L,M)
+            x_steps - the number of steps in space
+            tau_steps - the number of steps in tau
+
+      returns: phi - goodness of fit variable"""
+
+      # space variables
+      L, M = bounds
+
+      # x = np.linspace (0., L+M, phi_steps)
+      # dx = x[1] - x[0]
+
+      # time variable
+      delta_tau = tau / tau_steps
+
+      # Global variables
+      mu = R - D
+      a_y = np.gradient(a, x, edge_order=2)
+
+      # phi list
+      phi_last = v_mod - v_true
+      phi_last[0], phi_last[-1] = 0, 0
+
+      past_phi = np.empty((tau_steps+1, x_steps)) # of use in next step
+      past_phi[0] = phi_last
+
+      # Meyer's method: v = Uz + u
+      U = np.zeros(x_steps)
+      z = np.zeros(x_steps)
+      u = np.zeros(x_steps)
+
+      for t in range (tau_steps):
+          """Loops x solving algorithm until we reach tau^*"""
+
+          # initial values
+          U[0] = 0                # (A.3)
+          u[0] = 0                # (A.4)
+
+          for i in range (1, x_steps):
+              """Initial loop runs forwards from X(0 -> L+M), fills up U and u."""
+
+              dx = x[i] - x[i-1]
+              # implicit Euler scheme
+              alpha = ((mu * a_y[i]) / a[i]) + 1 / delta_tau
+              beta = 1 + (mu / a[i]) - (a_y[i] / a[i])
+
+              A, B, C = dx * alpha, 1 - dx * beta, -U[i-1] - dx / a[i]
+              U[i] = (-B + np.sqrt(B**2 - 4 * A * C)) / (2 * A)
+
+              c = U[i] * alpha + (a_y[i] / a[i])
+              d = (phi_last[i] / delta_tau) * U[i]
+
+              u[i] = (u[i-1] + dx * d) / (1 + dx * c)
+
+
+          # initial condition for z
+          z[-1] = - u[-1] / U[-1] # (A.5)
+
+          for i in range (x_steps - 2, -1, -1):
+              """Backwards loop running from X(L+M -> 0), fills up z."""
+
+              dx = x[i+1] - x[i]
+
+              lambda_ = (U[i] / delta_tau) - 1 - mu * ((1 - a_y[i] * U[i]) / a[i])
+              gamma = ((u[i] - phi_last[i]) / delta_tau) + ((a_y[i] * u[i]) / a[i]) * mu
+
+              z[i] = (z[i+1] - dx * gamma) / (1 + dx * lambda_) 
+
+
+
+          phi_next = U * z + u
+          past_phi[t+1] = phi_next
+          phi_last = phi_next.copy()
+
+      return past_phi[::-1]
+#+end_src
+
+#+caption: Variational inequality solver
+#+begin_src python :eval never-export
+  def variationalineqsolver (past_phi, past_v, R, D, tau, x_domain, a, a_0, a_1, N_reg, tau_steps,
+                             alpha = 0.45, eta = 1e-4, max_steps = 2000):
+      """Implementation of the variational inequality scheme in (Lishang et al. 2003)
+
+      args:
+      past_phi - all values of phi(y,0 -> tau^*)
+      past_v - all values of v(y,0 -> tau^*)
+      R - risk-free rate
+      D - dividend rate
+      tau - time till maturity
+      x_domain - the map of space (doesn't matter between x and y, same map different origin)
+      a - transformed volatility estimate
+      a_0 - minimum transformed volatility estimate
+      a_1 - maximum transformed volatility estimate
+      N_dat -
+      tau_steps - number of steps in tau
+      alpha - estimate for alpha
+      
+      """
+
+      dy = x_domain[1] - x_domain[0]
+      dtau = tau / tau_steps
+
+      # constructing f(y; v, \phi)
+      # first derivatives of v(y,tau^*)
+      v_tau = np.gradient(past_v, dtau, axis=0, edge_order=2)
+      v_y = np.gradient(past_v, x_domain, axis=1, edge_order=2)
+
+
+      # integration step
+      integrand = (past_phi * (v_tau + (R-D) * v_y) / a[None,:])
+      f = np.trapezoid(integrand, dx=dtau, axis=0) / N_reg
+
+
+      # (A.7)
+      dt = alpha * dy**2
+
+      a_old = a.copy()
+
+      for t in range(max_steps):
+          
+          B = alpha * a_old[2:] + (1 - 2 * alpha) * a_old[1:-1] + alpha * a_old[:-2] - f[1:-1] * dt
+
+          a_new = a_old.copy()
+          
+          a_new[1:-1] = np.clip(B, a_0, a_1)
+
+          a_new[0], a_new[-1] = a_new[1], a_new[-2]
+
+          a_old = a_new
+
+      return a_old
+
+#+end_src
+
+#+caption: Wrapper that runs all required functions for inversion
+#+begin_src python :eval never-export
+  def LishangInversion(
+      v_true,
+      a,
+      R,
+      D,
+      tau,
+      y_true,
+      space_bounds,
+      a_bounds,
+      stock_price,
+      N_regl=1e-2,
+      vieta=1e-4,
+      outer_eta=1e-7,
+      max_steps_alpha=5000,
+      x_steps=1000,
+      tau_steps=504,
+      alpha = 0.45,
+      max_outer_loops=600,
+  ):
+      """Wrapper inversion function"""
+
+      if isinstance(a, (int, float)):
+          a = np.ones(x_steps) * a
+      elif np.isscalar(a):
+          a = np.ones(x_steps) * np.float64(a)
+      else:
+          a = np.asarray(a, dtype=np.float64)
+
+      L, M = space_bounds
+      a_low, a_high = a_bounds
+
+      x_domain = np.linspace(0, L + M, x_steps)
+      y_domain = x_domain - L
+
+      s_idx = np.argsort(y_true, kind="stable")
+
+      y_sorted, v_sorted = y_true[s_idx], v_true[s_idx]
+
+      y_bound = np.concatenate(([-L], y_sorted, [M]))
+      v_bound = np.concatenate(([1], v_sorted, [0]))
+
+      # interpolating empirical data across discretised values
+      v_true_grid = np.interp(y_domain, y_bound, v_bound)
+
+
+      for step in range (max_outer_loops):
+      # modelled premiums
+          v_past = v_solver_implicit(R, D, tau, a, space_bounds, x_steps, tau_steps)
+          v_tau_star = v_past[-1]
+      
+          phi_past = phi_solver_implicit(v_true_grid, v_tau_star, a, R, D, tau, x_domain,
+                                         space_bounds, x_steps, tau_steps)
+      
+          new_a = variationalineqsolver(phi_past, v_past, R, D, tau, x_domain, a,
+                                        a_low, a_high, N_regl, tau_steps, alpha, vieta, max_steps_alpha)
+
+          if np.linalg.norm(a - new_a, ord=np.inf) < outer_eta:
+              return new_a
+
+          a = new_a.copy()
+
+      return new_a
+
+  y = np.log(K_path / x)
+
+  # v is the model set of insurance premiums, 0.02 is the first volatility estimate, R - D is \mu,
+  # tau is the time till maturity, y = ln(K/x),
+  first_sigma_est = 0.25
+  first_a_est = (first_sigma_est**2) / 2
+
+  est_a = LishangInversion (v, first_a_est, R, D, tau, y, (L, M), (0.005, 0.045), x)
+
+#+end_src
+
+
+
+* References
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+
+# references I haven't cited but are used
+[cite/n:@xueOptionPricingModels2025]
+
+#+cite_export: csl ~/Zotero/styles/chicago-author-date.csl
+#+print_bibliography:
