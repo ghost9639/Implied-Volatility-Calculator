@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [Project](#org79e24b9)
-2.  [Theoretical background](#org90050a9)
-3.  [Algorithm](#org064646e)
-4.  [Simulated data inversion](#org9d0f4db)
-5.  [Real data inversion](#org64f5abd)
-6.  [Appendix](#org5c2bb72)
+1.  [Project](#org8050d7e)
+2.  [Theoretical background](#orgff00341)
+3.  [Algorithm](#orgc60d8f9)
+4.  [Simulated data inversion](#org168beed)
+5.  [Real data inversion](#orgfb3c378)
+6.  [Appendix](#org0da2e18)
 
 
 
-<a id="org79e24b9"></a>
+<a id="org8050d7e"></a>
 
 # Project
 
@@ -23,8 +23,10 @@ This project includes:
 3.  detailed explanation of well-posed algorithm,
 4.  implementation of (Lishang, Jiang and Qihong, Chen and Ligun, Wang and Jin E., Zhang, 2003) algorithm in Python.
 
+[Full report](Report/DissertationReport.pdf) available in /Report.   
 
-<a id="org90050a9"></a>
+
+<a id="orgff00341"></a>
 
 # Theoretical background
 
@@ -35,14 +37,14 @@ $\frac{\partial u}{\partial t} + &sigma; x<sup>2</sup> \frac{\partial^2 u}{\part
 where $u$ is the call option premium, $t$ is the current time, $\sigma$ is the underlying market volatility, $x$ is the price of an option, $R$ is the interest rate and $D$ is the dividend rate, sets the arbitrage-free price of an option in classical option pricing. Recovering &sigma; permits the arbitrage-free pricing and evaluation of existing options.
 
 
-<a id="org064646e"></a>
+<a id="orgc60d8f9"></a>
 
 # Algorithm
 
 The algorithm converts the Black-Scholes equation to an optimal control problem. First, we can numerically solve for the theoretical value of the option premium under an initial volatility estimate. Then, we solve an adjoint equation testing the goodness of fit between the theoretical and obtained curve. Finally, a variation inequality solver estimates the numerical value of the fit over a false interval, returning an improved estimate for volatility. These steps are repeated until convergence. [Project file](Programs/LishangAlg.py) available in /Programs/LishangAlg.py.
 
 
-<a id="org9d0f4db"></a>
+<a id="org168beed"></a>
 
 # Simulated data inversion
 
@@ -66,7 +68,7 @@ For the optimal control problem, I set $L = M = 10$, $N = 0.01$, $\eta = 0.0001$
 ![img](Report/images/smilepred.svg "Inverted volatility in 'smile' case")
 
 
-<a id="org64f5abd"></a>
+<a id="orgfb3c378"></a>
 
 # Real data inversion
 
@@ -77,7 +79,7 @@ Using the Bloomberg Excel API, I got a wide range of strike prices for European 
 ![img](Report/images/diagnostic5.svg "Repriced options vs true market value")
 
 
-<a id="org5c2bb72"></a>
+<a id="org0da2e18"></a>
 
 # Appendix
 
