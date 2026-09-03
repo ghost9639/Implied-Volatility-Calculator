@@ -47,7 +47,7 @@
             
        \vspace{1.5cm}
 
-       \textbf{Rahul Ghosh: 201605543} \\ (email: hy22rg@leeds.ac.uk)
+       \textbf{R} \\ (email: hy22rg@leeds.ac.uk)
 
 
        \vfill
