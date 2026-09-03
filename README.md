@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [Project](#org013778c)
-2.  [Theoretical background](#orgd3cfe66)
-3.  [Algorithm](#org8144e67)
-4.  [Simulated data inversion](#org35ae404)
-5.  [Real data inversion](#orgc596876)
-6.  [Appendix](#org8a7a1ac)
+1.  [Project](#org772a827)
+2.  [Theoretical background](#org6163ac8)
+3.  [Algorithm](#org349d023)
+4.  [Simulated data inversion](#org8ae455d)
+5.  [Real data inversion](#org4b334e3)
+6.  [Appendix](#orge443c3e)
 
 
 
-<a id="org013778c"></a>
+<a id="org772a827"></a>
 
 # Project
 
@@ -26,7 +26,7 @@ This project includes:
 [Full report](Report/DissertationReport.pdf) available in /Report.   
 
 
-<a id="orgd3cfe66"></a>
+<a id="org6163ac8"></a>
 
 # Theoretical background
 
@@ -47,14 +47,14 @@ $$u(x, T) = \max (x-K,0), \quad x \in (0,\infty],$$
 where $u$ is the call option premium, $t$ is the current time, $\sigma$ is the underlying market volatility, $x$ is the price of an option, $R$ is the interest rate and $D$ is the dividend rate, sets the arbitrage-free price of an option in classical option pricing. Recovering &sigma; permits the arbitrage-free pricing and evaluation of existing options.
 
 
-<a id="org8144e67"></a>
+<a id="org349d023"></a>
 
 # Algorithm
 
 The algorithm converts the Black-Scholes equation to an optimal control problem. First, we can numerically solve for the theoretical value of the option premium under an initial volatility estimate. Then, we solve an adjoint equation testing the goodness of fit between the theoretical and obtained curve. Finally, a variation inequality solver estimates the numerical value of the fit over a false interval, returning an improved estimate for volatility. These steps are repeated until convergence. [Project file](Programs/LishangAlg.py) available in /Programs/LishangAlg.py.
 
 
-<a id="org35ae404"></a>
+<a id="org8ae455d"></a>
 
 # Simulated data inversion
 
@@ -63,11 +63,16 @@ I simulated data according to the specifications: $D = 0$, $R = 0.12$, $a_0 = 0.
 and the cases:
 
 1.  'flat' volatility,
-    $&sigma;<sub>p</sub>(x) = 0.25,$
+    
+    $$\sigma_p(x) = 0.25,$$
+
 2.  'smile' volatility,
-    $&sigma;<sub>p</sub>(x) = (ln (s / 10))<sup>2</sup> / 40 + 0.2,$
+    
+    $$\sigma_p(x) = (\ln (s / 10))^2 / 40 + 0.2,$$
+
 3.  'skew' volatility,
-    $&sigma;<sub>p</sub>(x) = -(ln(s/10))<sup>3</sup> / 80 + 0.2,$
+    
+    $$\sigma_p(x) = -(\ln(s/10))^3 / 80 + 0.2,$$
 
 For the optimal control problem, I set $L = M = 10$, $N = 0.01$, $\eta = 0.0001$, $\alpha = 0.45$, 5,000 loops within the variational inequality solver, and a maximum of 600 iterations for the overall function. The results showed a high degree of accuracy, and the inverted local volatility maintained the correct shape for the underlying volatility with a minor bias.
 
@@ -78,7 +83,7 @@ For the optimal control problem, I set $L = M = 10$, $N = 0.01$, $\eta = 0.0001$
 ![img](Report/images/smilepred.svg "Inverted volatility in 'smile' case")
 
 
-<a id="orgc596876"></a>
+<a id="org4b334e3"></a>
 
 # Real data inversion
 
@@ -89,7 +94,7 @@ Using the Bloomberg Excel API, I got a wide range of strike prices for European 
 ![img](Report/images/diagnostic5.svg "Repriced options vs true market value")
 
 
-<a id="org8a7a1ac"></a>
+<a id="orge443c3e"></a>
 
 # Appendix
 
