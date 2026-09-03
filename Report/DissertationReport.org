@@ -112,7 +112,7 @@ Black and Scholes seminal paper unified key models in the literature, including 
 \begin{equation}
 dx = x \mu dt + x \sigma dW_t,
 \end{equation}
-where \mu is a drift term, \sigma is a volatility term that scales to the variability of the underlying asset market, and $W_t$ is a Brownian motion. They converted this to the Black-Scholes Partial Differential Equation (PDE) under arbitrage-free conditions:
+where \mu is a drift term, \sigma is a volatility term that scales to the variability of the underlying asset market, and $W_t$ is a Brownian motion. They converted this to the Black-Scholes partial differential equation (PDE) under arbitrage-free conditions:
 \[\frac{\partial u}{\partial t} + \frac{1}{2} \sigma^2 x^2 \frac{\partial^2 u}{\partial x^2} + (R-D) x \frac{\partial u}{\partial x} - Ru = 0; \quad D > 0,\]
 where $u(x_t, t)$ is the call option premium, $t$ is the time, \sigma is the "volatility" of the underlying stock, $x$ is the price of the underlying stock, $R$ is the interest rate, and $D$ is the dividend paid on the underlying stock. They obtained closed form solutions for the fair price of an option under a direct problem of this PDE. This involved a few key assumptions, such as a known and constant risk-free rate, zero dividends, no transaction costs, or unlimited shorting potential [cite:@blackPricingOptionsCorporate1973 pp. 638-644].
 # \linebreak
@@ -189,7 +189,7 @@ In summary, studies in option pricing expanded massively following the seminal p
 
 Black and Scholes considered the SDE ([[eq::BlackScholesSDE]]):
 \[dx_t = x_t \mu dt + x_t \sigma dW_t, \]
-Itô's lemma can price some generic valuation function (corresponding to an option), namely, if there exists a continuous, semi-martingale variable $x_t$ and the smooth functional $f(x_t, t)$ has continuous trajectories, then:
+to define the price $x_t$ corresponding to a stock /X/ at time /t/. Itô's lemma can price some generic valuation function $f(x,t)$ (corresponding to an option). If there exists a continuous, semi-martingale stock price variable $x_t$ and the smooth functional $f(x_t, t)$ has continuous trajectories, then:
 #+name: eq::ItôLemma
 \begin{equation}
 df(x_t,t) = \frac{\partial}{\partial t} f(x_t,t) dt + \frac{\partial}{\partial x} f(x_t,t) dx_t + \frac{1}{2} \frac{\partial^2}{\partial x^2} f(x_t,t) (dx_t)^2,
@@ -200,8 +200,8 @@ as per [cite:@dupireFunctionalItoCalculus2019; p. 7]. Consider a simple Itô pro
 dX_t = a (X_t, t) dt + b (X_t , t) dW_t,
 \end{equation}
 where $a$ and $b$ are functions of $X_t$ (space) and $t$ (time), a key observation in Itô calculus is that for:
-\[dX^2_t = a(X_t,t)^2 dt^2 + 2 a(X_t,t) b(X_t,t) dt \text{ } dW_t + b(X_t,t)^2 dW^2_t, \]
-since, by the definition of a Brownian motion as $W_t \sim N(0,t)$ where $N$ corresponds to the Gaussian distribution, $\mathbb{E}\left[ W^2_t \right] = t$, as $t$ decreases in the differential limit, the $dt^2$ and $dt \cdot dW_t$ terms tend to 0, leaving:
+\[dX^2_t = a(X_t,t)^2 dt^2 + 2 a(X_t,t) b(X_t,t) dt \text{ } dW_t + b(X_t,t)^2 dW^2_t. \]
+By the definition of a Brownian motion as $W_t \sim N(0,t)$ where $N$ corresponds to the Gaussian distribution, $\mathbb{E}\left[ W^2_t \right] = t$, as $t$ decreases in the differential limit, the $dt^2$ and $dt \cdot dW_t$ terms tend to 0, leaving:
 \[\underset{t \rightarrow 0}{\lim} \; dX^2_t = b(X_t,t)^2 dt. \]
 Entering this relation into ([[eq::ItôLemma]]):
 \[df(X_t,t) = \frac{\partial f}{\partial t} dt + \frac{\partial f}{\partial x} dX_t + \frac{1}{2} \frac{\partial^2 f}{\partial x^2} b(X_t,t)^2 dt, \]
@@ -232,7 +232,7 @@ CLOCK: [2026-06-16 Tue 13:23]--[2026-06-16 Tue 13:33] =>  0:10
 CLOCK: [2026-06-16 Tue 11:58]--[2026-06-16 Tue 12:59] =>  1:01
 :END:
 
-The direct problem of option pricing is the Black-Scholes PDE under market-specific conditions. This is the problem:
+The direct problem of option pricing is the Black-Scholes PDE under market-specific conditions:
 #+name: eq::BlackScholes
 \begin{equation}
 \frac{\partial u}{\partial t} + \frac{1}{2} \sigma^2 x^2 \frac{\partial^2 u}{\partial x^2} + (R-D) x \frac{\partial u}{\partial x} - Ru = 0; \quad R, D \geq 0, \; \sigma > 0,
@@ -295,13 +295,13 @@ and finally:
 \frac{\partial u}{\partial t} = \frac{\partial u}{\partial \tau} \cdot \frac{\partial \tau}{\partial t} = - \frac{1}{2} \sigma^2 K \frac{\partial v}{\partial \tau}.
 \end{equation}
 returning equations ([[eq::uxpart]]), ([[eq::u2xpart]]), and ([[eq::utpart]]) into the original equation ([[eq::BlackScholes]]):
-\[-\frac{1}{2}\sigma^2 v_\tau + \frac{1}{2} \sigma^2 \left(\frac{\partial^2 v}{\partial y^2} - \frac{\partial v}{\partial y} \right) + (r-D) \frac{\partial v}{\partial y} - rv = 0, \]
+\[-\frac{1}{2}\sigma^2 v_\tau + \frac{1}{2} \sigma^2 \left(\frac{\partial^2 v}{\partial y^2} - \frac{\partial v}{\partial y} \right) + (R-D) \frac{\partial v}{\partial y} - Rv = 0, \]
 which simplifies into:
-\[v_\tau = v_{y y} - v_y + \frac{r-D}{\frac{1}{2} \sigma^2} v_y - \frac{r}{\frac{1}{2}\sigma^2} = 0, \]
+\[v_\tau = v_{y y} - v_y + \frac{R-D}{\frac{1}{2} \sigma^2} v_y - \frac{R}{\frac{1}{2}\sigma^2} = 0, \]
 where $v_z$ corresponds to the first derivative of $v$ with respect to $z$. Consolidating terms:
 #+name: eq::absubs
 \begin{equation}
-a := \frac{r-D}{\frac{1}{2} \sigma^2}, \quad b = \frac{r}{\frac{1}{2}\sigma^2},
+a := \frac{R-D}{\frac{1}{2} \sigma^2}, \quad b = \frac{R}{\frac{1}{2}\sigma^2},
 \end{equation}
 then the Black-Scholes PDE becomes:
 #+name: eq::bsheateq
@@ -473,7 +473,7 @@ Consider the Black-Scholes PDE:
 in the simplified case where $D = 0$. Take the substitutions:
 #+name: eq::BSrsigtsubs
 \begin{equation}
-x = Ke^y, \quad u(x,t') = Ev(y,t'), \quad t = T-t'.
+x = Ke^y, \quad u(x,t') = Kv(y,t'), \quad t = T-t'.
 \end{equation}
 These are reminiscent of ([[eq::scholessubs]]), but scale time by the beginning rather than the "density". Taking partial derivatives of ([[eq::BSrsigtsubs]]):
 #+name: eq::firstpartialrst
@@ -579,23 +579,23 @@ This method successfully recovers the heat equation from the Black-Scholes PDE w
 
 In a paper addressing the Black-Scholes inverse problem, Bouchouev and Isakov derive a heat equation from the Black-Scholes PDE in the case where volatility is time and space dependent such that:
 \[\sigma(s,t) = \psi(s) \rho (t), \]
-where \psi is the parametric volatility in space and \rho is the numerically solved volatility function in time, and both are assumed to be independent [cite:@bouchouevUniquenessStabilityNumerical1999 p. R100]. As stated in equation [[eq::BlackScholes]]:
+where \psi is the parametric volatility in space and \rho is the numerically solved volatility function in time, and both are assumed to be independent [cite:@bouchouevUniquenessStabilityNumerical1999 p. R100]. As stated in equation ([[eq::BlackScholes]]):
 \[\frac{\partial u}{\partial t} + \frac{1}{2} \sigma^2 x^2 \frac{\partial^2 u}{\partial x^2} + (R-D) x \frac{\partial u}{\partial x} - Ru = 0; \quad D > 0. \]
 
 Consider substitutions:
 
 #+name: eq::boukov1999subs
 \begin{equation}
-\tau = \int^T_t \rho^2 (y) dy, \quad \xi = x e^{\mu (T-t)}, \quad v(\xi, \tau) = u(s,t) e^{r(T-t)},
+\tau = \int^T_t \rho^2 (y) dy, \quad \xi = x e^{\mu (T-t)}, \quad v(\xi, \tau) = u(s,t) e^{R(T-t)},
 \end{equation}
 
 For the partial derivatives:
 
-\[\frac{\partial u}{\partial t} = \frac{\partial}{\partial t} \left(v(\xi (t), \tau(t)) e^{-r(T-t)} \right), \]
+\[\frac{\partial u}{\partial t} = \frac{\partial}{\partial t} \left(v(\xi (t), \tau(t)) e^{-R(T-t)} \right), \]
 
 #+name: eq::isachevsubutstart
 \begin{equation}
-\frac{\partial u}{\partial t} = r ve^{-r(T-t)} + e^{-r(T-t)} \left(\frac{\partial v}{\partial \xi} \cdot \frac{\partial \xi}{\partial t} + \frac{\partial v}{\partial \tau} \cdot \frac{\partial \tau}{\partial t} \right),
+\frac{\partial u}{\partial t} = r ve^{-R(T-t)} + e^{-R(T-t)} \left(\frac{\partial v}{\partial \xi} \cdot \frac{\partial \xi}{\partial t} + \frac{\partial v}{\partial \tau} \cdot \frac{\partial \tau}{\partial t} \right),
 \end{equation}
 
 evaluating these components individually,
@@ -614,12 +614,12 @@ Returning ([[eq::isachevsubxit]]) and ([[eq::isachevsubxit]]) into equation ([[e
 
 #+name: eq::isachevsubut
 \begin{equation}
-\frac{\partial u}{\partial t} = ru - e^{-r(T-t)} \left(\mu \xi \frac{\partial v}{\partial \xi} + \rho^2 (t) \frac{\partial v}{\partial \tau} \right).
+\frac{\partial u}{\partial t} = Ru - e^{-R(T-t)} \left(\mu \xi \frac{\partial v}{\partial \xi} + \rho^2 (t) \frac{\partial v}{\partial \tau} \right).
 \end{equation}
 
 For the next partial derivative:
 
-\[\frac{\partial u}{\partial x} = \frac{\partial}{\partial x} \left(v\left(\xi (x), \tau \right) e^{-r(T-t)} \right), \]
+\[\frac{\partial u}{\partial x} = \frac{\partial}{\partial x} \left(v\left(\xi (x), \tau \right) e^{-R(T-t)} \right), \]
 
 similarly to previous cases,
 
@@ -629,25 +629,25 @@ meaning that the original substitution reduces to:
 
 #+name: eq::isachevsubux
 \begin{equation}
-\frac{\partial u}{\partial x} = \frac{\xi}{x} e^{r(T-t)} \frac{\partial v}{\partial \xi},
+\frac{\partial u}{\partial x} = \frac{\xi}{x} e^{R(T-t)} \frac{\partial v}{\partial \xi},
 \end{equation}
 
 where $\xi/x$ comes from the substitution in ([[eq::boukov1999subs]]). For the final partial derivative,
 
-\[\frac{\partial^2 u}{\partial x^2} = \frac{\partial}{\partial x} \left(\frac{\partial u}{\partial x} \right) = \frac{\partial \xi}{\partial x} \cdot \frac{\partial}{\partial \xi} \left(e^{(\mu - r)(T-t)} \frac{\partial v}{\partial \xi} \right), \]
+\[\frac{\partial^2 u}{\partial x^2} = \frac{\partial}{\partial x} \left(\frac{\partial u}{\partial x} \right) = \frac{\partial \xi}{\partial x} \cdot \frac{\partial}{\partial \xi} \left(e^{(\mu - R)(T-t)} \frac{\partial v}{\partial \xi} \right), \]
 
 #+name: eq::isachevsubu2x2
 \begin{equation}
-\frac{\partial^2 u}{\partial x^2} = \frac{\xi^2}{x^2} e^{-r(T-t)} \frac{\partial^2 v}{\partial \xi^2}.
+\frac{\partial^2 u}{\partial x^2} = \frac{\xi^2}{x^2} e^{-R(T-t)} \frac{\partial^2 v}{\partial \xi^2}.
 \end{equation}
 
 Feeding back ([[eq::isachevsubut]]), ([[eq::isachevsubux]]), and ([[eq::isachevsubu2x2]]) into ([[eq::BlackScholes]]), we get:
 
-\[ru - \mu \xi v_\xi - \rho^2 (t) v_\tau + \frac{1}{2} \psi^2 (s) \rho^2 (t) \xi^2 v_{\xi, xi} + r \xi v_\xi - ru = 0, \]
+\[Ru - \mu \xi v_\xi - \rho^2 (t) v_\tau + \frac{1}{2} \psi^2 (s) \rho^2 (t) \xi^2 v_{\xi, xi} + R \xi v_\xi - Ru = 0, \]
 
-In the Black-Scholes model, $\mu = r$, so:
+In the Black-Scholes model, $\mu = R$, so:
 
-\[\rho^2 (t) v_\tau = \frac{1}{2} \psi^2 (s) \rho^2 (t) \xi^2 v_{\xi, \xi} + (r-\mu) \xi v_\xi, \]
+\[\rho^2 (t) v_\tau = \frac{1}{2} \psi^2 (s) \rho^2 (t) \xi^2 v_{\xi, \xi} + (R-\mu) \xi v_\xi, \]
 
 yielding the relation:
 
@@ -803,7 +803,7 @@ This is slightly different to the original paper [cite:@bouchouevInverseProblemO
 :END:
 
 [cite:@lishangNewWellposedAlgorithm2003 p. 453] considered a Cauchy problem conversion of the Black-Scholes model in their solution to the inverse problem. Consider the Dupire equation [[eq::dupire]], under a few constraints on the space of the strike price:
-\[u_\tau = \frac{1}{2} \sigma^2 K^2 u_{KK} - (r-D) K u_K - Du, \]
+\[u_\tau = \frac{1}{2} \sigma^2 K^2 u_{KK} - (R-D) K u_K - Du, \]
 \[u |_{K=0} = e^{-D\tau} x, \]
 \[u|_{\tau=0} = (x-K)^+, \]
 where it is also assumed that $K$ satisfies:
@@ -839,7 +839,7 @@ Finally,
 \end{equation}
 Returning ([[eq::lishanguk]]), ([[eq::lishangu2k2]]), and ([[eq::lishangut]]) back into equation ([[eq::dupire]]):
 
-\[x e^{-D\tau} \frac{\partial v}{\partial \tau} - D x e^{-D \tau} v = \frac{1}{2} \sigma^2 K^2 \frac{x}{K^2} \frac{x}{K^2} e^{-D \tau} \left(\frac{\partial^2 v}{\partial y^2} -  \frac{\partial v}{\partial y} \right) - (R-D)K \cdot \frac{x}{K} e^{-D \tau} \frac{\partial v}{\partial y} - D x e^{-D \tau} v, \]
+\[x e^{-D\tau} \frac{\partial v}{\partial \tau} - D x e^{-D \tau} v = \frac{1}{2} \sigma^2 K^2 \frac{x}{K^2} e^{-D \tau} \left(\frac{\partial^2 v}{\partial y^2} -  \frac{\partial v}{\partial y} \right) - (R-D)K \cdot \frac{x}{K} e^{-D \tau} \frac{\partial v}{\partial y} - D x e^{-D \tau} v, \]
 which simplifies to:
 \[v_\tau = \frac{1}{2}\sigma^2 K^2 \left(v_{yy} - v_y \right) - (R-D) v_y, \]
 
@@ -863,14 +863,14 @@ as per their finding in [cite:@lishangNewWellposedAlgorithm2003 p. 453].
 :CUSTOM_ID: section::solvecauchy
 :END:
 
-[cite:@lishangNewWellposedAlgorithm2003, p. 456] propose a well-posed scheme for parameter inversion. This requires solving two PDEs, a state equation ([[eq::cauchypro]]) and an adjoint equation ([[eq::cauchyadj]]),
+[cite:@lishangNewWellposedAlgorithm2003 p. 456] propose a well-posed scheme for parameter inversion. This requires solving two PDEs, a state equation ([[eq::cauchypro]]) and an adjoint equation ([[eq::cauchyadj]]),
 #+name: eq::cauchypro
 \begin{equation}
-v_\tau = a (v_{yy} - v_y) - (r-q) v_y; \; \; v|_{\tau=0}= (1-e^y)^*,
+v_\tau = a (v_{yy} - v_y) - (R-D) v_y; \; \; v|_{\tau=0}= (1-e^y)^*,
 \end{equation}
 #+name: eq::cauchyadj
 \begin{equation}
--\phi_\tau = (a\phi)_{yy} + (a\phi)_{y} + (r-q) \phi_y; \; \; \phi|_{\tau=\tau^*} = v(y,\tau^*) - v^*(y),
+-\phi_\tau = (a\phi)_{yy} + (a\phi)_{y} + (R-D) \phi_y; \; \; \phi|_{\tau=\tau^*} = v(y,\tau^*) - v^*(y),
 \end{equation}
 where $\phi(y,\tau)$ is the generalised solution to an optimal control problem that minimises a cost function for how well the calculated premium function $v(y,\tau^*)$ fits the empirical curve $v^*(y)$ [cite:@lishangNewWellposedAlgorithm2003 p. 456].
 
@@ -1114,17 +1114,13 @@ The relationship ([[eq::implz2]]) and ([[eq::initcondz]]) allow the back-filling
 
 
 The optimal control algorithm is well explained within section (A.2) of the original paper [cite:@lishangNewWellposedAlgorithm2003 p. 456]. Firstly, numerically integrate the function:
-\[f(y;v,\phi) = \frac{1}{N} \int^{\tau^*}{0} \phi [v_\tau + (R-D) v_y] / a d\tau, \]
-where $N$ is a regularisation constant $(N=1)$ is an acceptable choice. This can be accomplished with a function like =np.trapezoid=, Then, calculate a variable:
+\[f(y;v,\phi) = \frac{1}{N} \int^{\tau^*}_{0} \phi [v_\tau + (R-D) v_y] / a d\tau, \]
+where $N$ is a regularisation constant. This can be accomplished with a function like =np.trapezoid=, Then, calculate a variable:
 \[B^n_i = \alpha a^n_{i+1} + (1-2\alpha)a^n_i + \alpha a^n_{i-1} - f_i \Delta_t, \quad \alpha = \Delta t / (\Delta y)^2, \]
-where $\Delta t$ is an induced "false" time step, with the only key requirement being that $\alpha < 0.5$ for numerical stability. The final step is to define a new $a(y)$ chain under the conditions:
+where $\Delta t$ is an induced "false" time step over the interval \alpha, with the only key requirement being that $\alpha < 0.5$ for numerical stability. The final step is to define a new $a(y)$ chain under the conditions:
 \[a^{n+1}_i = \begin{cases} B^n_i, & a_0 < a^n_i < a_1; \\ a_0, & a^n_i = a_0 \text{ and } B^n_i < a_0; \\ a_1, & a^n_i = a_1 \text{ and } B^n_i > a_1, \end{cases} \]
 where the estimated volatility function can only take values between $(a_0, a_1), \; 0<a_0<a_1$. This can be efficiently conducted with =np.clip=, which chooses a value within the bounds of its entry, or the boundary that is broken. This process can be iterated until the distance between the new and old estimates is lower than a certain tolerance limit, or until reaching a declared iteration cap.
 
-
-
-
-In this report, the Euclidean distance was given a convergence limit of $\eta = 10^{-4}$, but because $\Delta t << \eta$, any time-step would produce a change too small to exceed \eta, and the function would spuriously converge on the first iteration. To combat this, the Euclidean distance can be rescaled by dividing it by $\Delta t$ before comparing to \eta.
 
 
 
