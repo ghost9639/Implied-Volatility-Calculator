@@ -1,16 +1,4 @@
 
-# Table of Contents
-
-1.  [Project](#org772a827)
-2.  [Theoretical background](#org6163ac8)
-3.  [Algorithm](#org349d023)
-4.  [Simulated data inversion](#org8ae455d)
-5.  [Real data inversion](#org4b334e3)
-6.  [Appendix](#orge443c3e)
-
-
-
-<a id="org772a827"></a>
 
 # Project
 
@@ -25,8 +13,6 @@ This project includes:
 
 [Full report](Report/DissertationReport.pdf) available in /Report.   
 
-
-<a id="org6163ac8"></a>
 
 # Theoretical background
 
@@ -47,14 +33,10 @@ $$u(x, T) = \max (x-K,0), \quad x \in (0,\infty],$$
 where $u$ is the call option premium, $t$ is the current time, $\sigma$ is the underlying market volatility, $x$ is the price of an option, $R$ is the interest rate and $D$ is the dividend rate, sets the arbitrage-free price of an option in classical option pricing. Recovering &sigma; permits the arbitrage-free pricing and evaluation of existing options.
 
 
-<a id="org349d023"></a>
-
 # Algorithm
 
 The algorithm converts the Black-Scholes equation to an optimal control problem. First, we can numerically solve for the theoretical value of the option premium under an initial volatility estimate. Then, we solve an adjoint equation testing the goodness of fit between the theoretical and obtained curve. Finally, a variation inequality solver estimates the numerical value of the fit over a false interval, returning an improved estimate for volatility. These steps are repeated until convergence. [Project file](Programs/LishangAlg.py) available in /Programs/LishangAlg.py.
 
-
-<a id="org8ae455d"></a>
 
 # Simulated data inversion
 
@@ -83,8 +65,6 @@ For the optimal control problem, I set $L = M = 10$, $N = 0.01$, $\eta = 0.0001$
 ![img](Report/images/smilepred.svg "Inverted volatility in 'smile' case")
 
 
-<a id="org4b334e3"></a>
-
 # Real data inversion
 
 Using the Bloomberg Excel API, I got a wide range of strike prices for European call options on Allianz (ALV GY Equity), a major insurance company with a high volume of trading activity in European markets. After discarding repeated and far out of the money options, I obtained the local volatility. Repricing revealed a high degree of accuracy for in the money options.
@@ -93,8 +73,6 @@ Using the Bloomberg Excel API, I got a wide range of strike prices for European 
 
 ![img](Report/images/diagnostic5.svg "Repriced options vs true market value")
 
-
-<a id="orge443c3e"></a>
 
 # Appendix
 
