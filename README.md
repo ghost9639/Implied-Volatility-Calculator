@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [Project](#org9fcb3ee)
-2.  [Theoretical background](#orgcb10af4)
-3.  [Algorithm](#org9fae37e)
-4.  [Simulated data inversion](#orga2369af)
-5.  [Real data inversion](#org5d2cce5)
-6.  [Appendix](#orgbb9da6f)
+1.  [Project](#org65c5f77)
+2.  [Theoretical background](#orge32a801)
+3.  [Algorithm](#org2c5dfa8)
+4.  [Simulated data inversion](#orgf54660b)
+5.  [Real data inversion](#org98ecb57)
+6.  [Appendix](#orgcd5ce3b)
 
 
 
-<a id="org9fcb3ee"></a>
+<a id="org65c5f77"></a>
 
 # Project
 
@@ -26,7 +26,7 @@ This project includes:
 [Full report](Report/DissertationReport.pdf) available in /Report.   
 
 
-<a id="orgcb10af4"></a>
+<a id="orge32a801"></a>
 
 # Theoretical background
 
@@ -35,22 +35,26 @@ The Black-Scholes equation underpins many industry standard methods of accuratel
 $$\frac{\partial u}{\partial t} + \frac{1}{2} \sigma^2 x^2 \frac{\partial^2 u}{\partial x^2} + (R-D) x \frac{\partial u}{\partial x} - Ru = 0; \quad R, D \geq 0, \; \sigma > 0,$$
 
 with boundary conditions:
+
 $$u(0,t) = 0, \quad t \in (0,T),$$
+
 $$u(x,t )\sim xe^{-D(T-t)}, \quad x \rightarrow \infty,$$
+
 and the initial market condition:
+
 $$u(x, T) = \max \{x-K,0\}, \quad x \in (0,\infty],$$
 
 where $u$ is the call option premium, $t$ is the current time, $\sigma$ is the underlying market volatility, $x$ is the price of an option, $R$ is the interest rate and $D$ is the dividend rate, sets the arbitrage-free price of an option in classical option pricing. Recovering &sigma; permits the arbitrage-free pricing and evaluation of existing options.
 
 
-<a id="org9fae37e"></a>
+<a id="org2c5dfa8"></a>
 
 # Algorithm
 
 The algorithm converts the Black-Scholes equation to an optimal control problem. First, we can numerically solve for the theoretical value of the option premium under an initial volatility estimate. Then, we solve an adjoint equation testing the goodness of fit between the theoretical and obtained curve. Finally, a variation inequality solver estimates the numerical value of the fit over a false interval, returning an improved estimate for volatility. These steps are repeated until convergence. [Project file](Programs/LishangAlg.py) available in /Programs/LishangAlg.py.
 
 
-<a id="orga2369af"></a>
+<a id="orgf54660b"></a>
 
 # Simulated data inversion
 
@@ -74,7 +78,7 @@ For the optimal control problem, I set $L = M = 10$, $N = 0.01$, $\eta = 0.0001$
 ![img](Report/images/smilepred.svg "Inverted volatility in 'smile' case")
 
 
-<a id="org5d2cce5"></a>
+<a id="org98ecb57"></a>
 
 # Real data inversion
 
@@ -85,7 +89,7 @@ Using the Bloomberg Excel API, I got a wide range of strike prices for European 
 ![img](Report/images/diagnostic5.svg "Repriced options vs true market value")
 
 
-<a id="orgbb9da6f"></a>
+<a id="orgcd5ce3b"></a>
 
 # Appendix
 
