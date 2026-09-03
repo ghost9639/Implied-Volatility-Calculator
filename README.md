@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [Project](#org8050d7e)
-2.  [Theoretical background](#orgff00341)
-3.  [Algorithm](#orgc60d8f9)
-4.  [Simulated data inversion](#org168beed)
-5.  [Real data inversion](#orgfb3c378)
-6.  [Appendix](#org0da2e18)
+1.  [Project](#org9fcb3ee)
+2.  [Theoretical background](#orgcb10af4)
+3.  [Algorithm](#org9fae37e)
+4.  [Simulated data inversion](#orga2369af)
+5.  [Real data inversion](#org5d2cce5)
+6.  [Appendix](#orgbb9da6f)
 
 
 
-<a id="org8050d7e"></a>
+<a id="org9fcb3ee"></a>
 
 # Project
 
@@ -26,25 +26,31 @@ This project includes:
 [Full report](Report/DissertationReport.pdf) available in /Report.   
 
 
-<a id="orgff00341"></a>
+<a id="orgcb10af4"></a>
 
 # Theoretical background
 
 The Black-Scholes equation underpins many industry standard methods of accurately pricing options. The parameters of the Black-Scholes equation for specific markets pose great value to practitioners. The Black-Scholes inverse problem concerns methods of effectively recovering these parameters from real markets. The Black-Scholes partial differential equation:
 
-$\frac{\partial u}{\partial t} + &sigma; x<sup>2</sup> \frac{\partial^2 u}{\partial x^2} + (R - D) x \frac{\partial u}{\partial  x} - R u = 0,$
+$$\frac{\partial u}{\partial t} + \frac{1}{2} \sigma^2 x^2 \frac{\partial^2 u}{\partial x^2} + (R-D) x \frac{\partial u}{\partial x} - Ru = 0; \quad R, D \geq 0, \; \sigma > 0,$$
+
+with boundary conditions:
+$$u(0,t) = 0, \quad t \in (0,T),$$
+$$u(x,t )\sim xe^{-D(T-t)}, \quad x \rightarrow \infty,$$
+and the initial market condition:
+$$u(x, T) = \max \{x-K,0\}, \quad x \in (0,\infty],$$
 
 where $u$ is the call option premium, $t$ is the current time, $\sigma$ is the underlying market volatility, $x$ is the price of an option, $R$ is the interest rate and $D$ is the dividend rate, sets the arbitrage-free price of an option in classical option pricing. Recovering &sigma; permits the arbitrage-free pricing and evaluation of existing options.
 
 
-<a id="orgc60d8f9"></a>
+<a id="org9fae37e"></a>
 
 # Algorithm
 
 The algorithm converts the Black-Scholes equation to an optimal control problem. First, we can numerically solve for the theoretical value of the option premium under an initial volatility estimate. Then, we solve an adjoint equation testing the goodness of fit between the theoretical and obtained curve. Finally, a variation inequality solver estimates the numerical value of the fit over a false interval, returning an improved estimate for volatility. These steps are repeated until convergence. [Project file](Programs/LishangAlg.py) available in /Programs/LishangAlg.py.
 
 
-<a id="org168beed"></a>
+<a id="orga2369af"></a>
 
 # Simulated data inversion
 
@@ -68,7 +74,7 @@ For the optimal control problem, I set $L = M = 10$, $N = 0.01$, $\eta = 0.0001$
 ![img](Report/images/smilepred.svg "Inverted volatility in 'smile' case")
 
 
-<a id="orgfb3c378"></a>
+<a id="org5d2cce5"></a>
 
 # Real data inversion
 
@@ -79,7 +85,7 @@ Using the Bloomberg Excel API, I got a wide range of strike prices for European 
 ![img](Report/images/diagnostic5.svg "Repriced options vs true market value")
 
 
-<a id="org0da2e18"></a>
+<a id="orgbb9da6f"></a>
 
 # Appendix
 
